@@ -1017,11 +1017,12 @@
     const REFERRAL_CODE_PARAM = urlParams.get('start'); // for deep link referral
     const JOINED_PARAM = urlParams.get('joined'); // 1 if user has joined channel
 
-    // Telegram user info
+    // Telegram user info (including photo if available)
     const tgUser = tg?.initDataUnsafe?.user;
     const tgUsername = tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
     const tgFirstName = tgUser?.first_name || 'Player';
     const tgUserId = tgUser?.id || 'unknown';
+    const tgPhotoUrl = tgUser?.photo_url || ''; // profile photo URL
 
     // -------------------- Webhook sender --------------------
     async function sendToBot(eventType, data = {}) {
@@ -1030,6 +1031,7 @@
         event: eventType,
         user_id: tgUserId,
         username: tgUsername,
+        photo_url: tgPhotoUrl, // include profile photo if available
         ...data,
         timestamp: Date.now()
       };
@@ -1167,6 +1169,9 @@
             updateLeaderboard();
             updateReferralDisplay();
             updateTopScorers();
+
+            // Handle referral param after player data is ready
+            handleReferralParam();
           }
         };
 
@@ -1182,6 +1187,7 @@
         id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         username: tgUsername,
         first_name: tgFirstName,
+        photo_url: tgPhotoUrl, // store profile photo
         telegram_id: tgUserId,
         wallet_address: '',
         total_coins: 0,
@@ -1210,16 +1216,6 @@
         // Send creation event to bot
         sendToBot('player_created', { player: newPlayer });
       }
-
-      // Handle referral param if present
-      if (REFERRAL_CODE_PARAM && REFERRAL_CODE_PARAM.startsWith('ref_')) {
-        const code = REFERRAL_CODE_PARAM.replace('ref_', '');
-        setTimeout(() => {
-          showScreen('referral-screen');
-          document.getElementById('referral-code-input').value = code;
-          showInlineMessage('🎁 Enter the referral code to get bonus!', 'success');
-        }, 1000);
-      }
     }
 
     function generateReferralCode() {
@@ -1229,6 +1225,28 @@
         code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       return code;
+    }
+
+    // Handle referral parameter from URL (e.g., ?start=ref_CODE)
+    function handleReferralParam() {
+      if (!playerData) return;
+      if (!REFERRAL_CODE_PARAM) return;
+      if (!REFERRAL_CODE_PARAM.startsWith('ref_')) return;
+      if (playerData.referred_by) {
+        // Already used a code, just show a message
+        showInlineMessage('You already used a referral code.', 'info');
+        return;
+      }
+
+      const refCode = REFERRAL_CODE_PARAM.replace('ref_', '');
+      // Pre-fill the referral input field
+      const inputField = document.getElementById('referral-code-input');
+      if (inputField) {
+        inputField.value = refCode;
+        showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
+      }
+      // Optionally send event to bot
+      sendToBot('referral_param_detected', { code: refCode });
     }
 
     // -------------------- UI Updates --------------------
@@ -2510,13 +2528,6 @@
     initSDK();
     initControls();
     updateUI();
-
-    // If there's a referral param, show message
-    if (REFERRAL_CODE_PARAM && REFERRAL_CODE_PARAM.startsWith('ref_')) {
-      setTimeout(() => {
-        showInlineMessage('Referral code detected! Go to Invite Friends to claim bonus.', 'info');
-      }, 2000);
-    }
   </script>
  </body>
 </html>
