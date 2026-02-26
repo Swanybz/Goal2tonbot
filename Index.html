@@ -1,0 +1,2516 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TON Football Championship</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Monetag Ad SDK -->
+  <script src='//libtl.com/sdk.js' data-zone='10656450' data-sdk='show_10656450'></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&amp;family=Rajdhani:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      overscroll-behavior: none;
+      touch-action: pan-x pan-y;
+    }
+    
+    * {
+      font-family: 'Rajdhani', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .game-title {
+      font-family: 'Orbitron', sans-serif;
+    }
+    
+    .field-3d {
+      perspective: 800px;
+      transform-style: preserve-3d;
+    }
+    
+    .field-surface {
+      transform: rotateX(55deg) rotateZ(0deg);
+      transform-style: preserve-3d;
+      background: linear-gradient(90deg, 
+        #1a5c1a 0%, #228b22 8%, #1a5c1a 8%, #1a5c1a 16%, 
+        #228b22 16%, #228b22 24%, #1a5c1a 24%, #1a5c1a 32%,
+        #228b22 32%, #228b22 40%, #1a5c1a 40%, #1a5c1a 48%,
+        #228b22 48%, #228b22 56%, #1a5c1a 56%, #1a5c1a 64%,
+        #228b22 64%, #228b22 72%, #1a5c1a 72%, #1a5c1a 80%,
+        #228b22 80%, #228b22 88%, #1a5c1a 88%, #1a5c1a 96%,
+        #228b22 96%, #228b22 100%);
+      box-shadow: 
+        0 20px 60px rgba(0,0,0,0.5),
+        inset 0 0 100px rgba(0,0,0,0.2);
+    }
+    
+    .field-lines {
+      position: absolute;
+      inset: 0;
+      border: 4px solid rgba(255,255,255,0.9);
+      border-radius: 4px;
+    }
+    
+    .center-circle {
+      position: absolute;
+      width: 80px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.9);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .center-line {
+      position: absolute;
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.9);
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .goal-area {
+      position: absolute;
+      width: 120px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.9);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .goal-area.top {
+      top: 0;
+      border-top: none;
+    }
+    
+    .goal-area.bottom {
+      bottom: 0;
+      border-bottom: none;
+    }
+    
+    .penalty-area {
+      position: absolute;
+      width: 180px;
+      height: 60px;
+      border: 3px solid rgba(255,255,255,0.9);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .penalty-area.top {
+      top: 0;
+      border-top: none;
+    }
+    
+    .penalty-area.bottom {
+      bottom: 0;
+      border-bottom: none;
+    }
+    
+    .goal-net {
+      position: absolute;
+      width: 80px;
+      height: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateZ(10px);
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 4px,
+        rgba(255,255,255,0.3) 4px,
+        rgba(255,255,255,0.3) 5px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 4px,
+        rgba(255,255,255,0.3) 4px,
+        rgba(255,255,255,0.3) 5px
+      );
+      border: 3px solid #fff;
+      border-radius: 2px;
+    }
+    
+    .goal-net.top {
+      top: -22px;
+    }
+    
+    .goal-net.bottom {
+      bottom: -22px;
+    }
+    
+    .player {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) translateZ(20px);
+      transition: all 0.15s ease-out;
+      cursor: pointer;
+      box-shadow: 
+        0 4px 8px rgba(0,0,0,0.4),
+        0 8px 16px rgba(0,0,0,0.2),
+        inset 0 -4px 8px rgba(0,0,0,0.3),
+        inset 0 4px 8px rgba(255,255,255,0.3);
+    }
+    
+    .player::before {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: radial-gradient(circle at 30% 30%, #ffd7a8, #d4a574);
+      border-radius: 50%;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .player::after {
+      content: attr(data-number);
+      position: absolute;
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .player.user {
+      background: linear-gradient(135deg, #0088cc 0%, #005580 100%);
+      border: 3px solid #00aaff;
+    }
+    
+    .player.super {
+      background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+      border: 3px solid #ffee00;
+      animation: superGlow 1s infinite;
+    }
+    
+    .player.ai {
+      background: linear-gradient(135deg, #cc2200 0%, #801500 100%);
+      border: 3px solid #ff4422;
+    }
+    
+    .player.selected {
+      box-shadow: 
+        0 0 20px #00ff88,
+        0 0 40px #00ff88,
+        0 4px 8px rgba(0,0,0,0.4);
+      border-color: #00ff88;
+      animation: selectedPulse 0.5s infinite;
+    }
+    
+    .ball {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: radial-gradient(circle at 30% 30%, #ffffff, #cccccc);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) translateZ(25px);
+      box-shadow: 
+        0 4px 8px rgba(0,0,0,0.5),
+        inset -2px -2px 4px rgba(0,0,0,0.2);
+      transition: all 0.1s linear;
+      z-index: 100;
+    }
+    
+    .ball::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 20%, transparent 30%, rgba(0,0,0,0.1) 31%),
+        conic-gradient(from 0deg, #111 0deg 72deg, transparent 72deg 144deg, 
+                       #111 144deg 216deg, transparent 216deg 288deg, #111 288deg 360deg);
+      border-radius: 50%;
+      opacity: 0.3;
+    }
+    
+    @keyframes superGlow {
+      0%, 100% { box-shadow: 0 0 20px #ffd700, 0 0 40px #ff8800; }
+      50% { box-shadow: 0 0 30px #ffd700, 0 0 60px #ff8800; }
+    }
+    
+    @keyframes selectedPulse {
+      0%, 100% { transform: translate(-50%, -50%) translateZ(20px) scale(1.1); }
+      50% { transform: translate(-50%, -50%) translateZ(20px) scale(1.15); }
+    }
+    
+    @keyframes goalCelebration {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.5) rotate(10deg); }
+      50% { transform: scale(1.3) rotate(-10deg); }
+      75% { transform: scale(1.4) rotate(5deg); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes confetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
+    }
+    
+    @keyframes varScan {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    
+    .goal-celebration {
+      animation: goalCelebration 1s ease-in-out;
+    }
+    
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      animation: confetti 2s ease-out forwards;
+    }
+    
+    .btn-3d {
+      transform: translateY(0);
+      transition: all 0.1s ease;
+      box-shadow: 
+        0 6px 0 #004466,
+        0 8px 10px rgba(0,0,0,0.3);
+    }
+    
+    .btn-3d:hover {
+      transform: translateY(2px);
+      box-shadow: 
+        0 4px 0 #004466,
+        0 6px 8px rgba(0,0,0,0.3);
+    }
+    
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 
+        0 2px 0 #004466,
+        0 4px 6px rgba(0,0,0,0.3);
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, rgba(0,136,204,0.2), rgba(0,85,128,0.3));
+      border: 1px solid rgba(0,170,255,0.3);
+      backdrop-filter: blur(10px);
+    }
+    
+    .joystick-container {
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, #1a1a2e 0%, #0d0d1a 100%);
+      border-radius: 50%;
+      border: 4px solid #0088cc;
+      position: relative;
+      box-shadow: 
+        inset 0 0 20px rgba(0,136,204,0.3),
+        0 4px 15px rgba(0,0,0,0.5);
+      touch-action: none;
+      user-select: none;
+    }
+    
+    .joystick-knob {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #0088cc, #005580);
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      cursor: grab;
+      box-shadow: 
+        0 4px 10px rgba(0,0,0,0.4),
+        inset 0 2px 10px rgba(255,255,255,0.2);
+      transition: transform 0.1s ease-out;
+      pointer-events: none;
+    }
+    
+    .action-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 11px;
+      text-transform: uppercase;
+      box-shadow: 
+        0 4px 0 rgba(0,0,0,0.3),
+        0 6px 10px rgba(0,0,0,0.3),
+        inset 0 2px 10px rgba(255,255,255,0.2);
+      transition: all 0.1s ease;
+      touch-action: none;
+      user-select: none;
+    }
+    
+    .action-btn:active, .action-btn.pressed {
+      transform: translateY(3px);
+      box-shadow: 
+        0 1px 0 rgba(0,0,0,0.3),
+        0 3px 6px rgba(0,0,0,0.3);
+    }
+    
+    .kick-btn {
+      background: linear-gradient(135deg, #ff6b35, #cc4400);
+      border: 3px solid #ff8855;
+    }
+    
+    .pass-btn {
+      background: linear-gradient(135deg, #00cc66, #009944);
+      border: 3px solid #00ff88;
+    }
+    
+    .sprint-btn {
+      background: linear-gradient(135deg, #ffcc00, #cc9900);
+      border: 3px solid #ffdd44;
+    }
+    
+    .energy-bar {
+      height: 8px;
+      background: linear-gradient(90deg, #ff3333, #ffcc00, #00ff66);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    
+    .celebration-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .celebration-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .celebration-content {
+      text-align: center;
+      transform: scale(0);
+      transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .celebration-overlay.active .celebration-content {
+      transform: scale(1);
+    }
+    
+    .var-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      animation: varScan 2s ease-in-out;
+    }
+    
+    .screen {
+      display: none;
+    }
+    
+    .screen.active {
+      display: flex;
+    }
+    
+    .leaderboard-entry {
+      transition: all 0.3s ease;
+    }
+    
+    .leaderboard-entry:hover {
+      transform: translateX(5px);
+      background: rgba(0,136,204,0.2);
+    }
+    
+    .ton-logo {
+      width: 24px;
+      height: 24px;
+      display: inline-block;
+    }
+    
+    .ton-logo-big {
+      width: 48px;
+      height: 48px;
+    }
+    
+    @keyframes pulse-ring {
+      0% {
+        box-shadow: 0 0 0 0 rgba(0,255,136,0.7);
+      }
+      100% {
+        box-shadow: 0 0 0 20px rgba(0,255,136,0);
+      }
+    }
+    
+    .pulse-animation {
+      animation: pulse-ring 1.5s infinite;
+    }
+    
+    .locked-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+      z-index: 100;
+    }
+    
+    .scroll-container {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .referral-code-box {
+      background: linear-gradient(135deg, #0088cc, #005580);
+      border: 2px dashed #00aaff;
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 2px;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white overflow-auto">
+  <div id="menu-screen" class="screen active flex-col items-center justify-center min-h-full p-6">
+   <div class="text-center mb-6">
+    <svg class="w-24 h-24 mx-auto mb-4" viewbox="0 0 100 100"><defs>
+      <lineargradient id="tonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+       <stop offset="0%" style="stop-color:#0088CC" />
+       <stop offset="50%" style="stop-color:#229ED9" />
+       <stop offset="100%" style="stop-color:#0088CC" />
+      </lineargradient>
+      <radialgradient id="shine">
+       <stop offset="0%" style="stop-color:#fff;stop-opacity:0.8" />
+       <stop offset="100%" style="stop-color:#fff;stop-opacity:0" />
+      </radialgradient>
+     </defs> <circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /> <ellipse cx="35" cy="35" rx="15" ry="12" fill="url(#shine)" opacity="0.4" /> <text x="50" y="42" text-anchor="middle" fill="white" font-size="18" font-weight="900" font-family="Arial">
+      TON
+     </text> <path d="M 30 55 L 70 55 M 30 62 L 70 62 M 30 69 L 70 69" stroke="white" stroke-width="3" opacity="0.3" />
+    </svg>
+    <h1 id="main-title" class="game-title text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 mb-2">TON FOOTBALL</h1>
+    <p id="welcome-msg" class="text-cyan-300 text-sm">Play &amp; Earn Real TON Crypto</p>
+    <p class="text-gray-500 text-xs mt-1">1 TON ≈ $5.20 USD</p>
+   </div>
+
+   <!-- Force Join Channel Banner (shown if not joined) -->
+   <div id="join-channel-banner" class="hidden w-full max-w-sm mb-4 p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-center">
+    <p class="font-bold mb-2">🔥 Join our channel to play!</p>
+    <a href="https://t.me/Goal2Ton_payout" target="_blank" class="inline-block px-4 py-2 bg-white text-purple-700 rounded-lg font-semibold mb-2">Join @Goal2Ton_payout</a>
+    <button onclick="verifyChannelJoin()" class="w-full mt-2 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-semibold">I've Joined – Verify</button>
+   </div>
+
+   <div class="stat-card rounded-2xl p-4 mb-6 w-full max-w-sm">
+    <div class="grid grid-cols-2 gap-3 mb-3">
+     <div class="text-center">
+      <div class="flex items-center justify-center gap-1 mb-1">
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span id="menu-coins" class="text-2xl font-bold text-cyan-400">0.0000</span>
+      </div><span class="text-gray-400 text-xs">TON Balance</span>
+     </div>
+     <div class="text-center">
+      <div class="flex items-center justify-center gap-2 mb-1"><span class="text-xl">⚡</span> <span id="menu-energy" class="text-2xl font-bold text-yellow-400">100</span>
+      </div><span class="text-gray-400 text-xs">Energy</span>
+     </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+     <div>
+      <div id="menu-wins" class="font-bold text-green-400">
+       0
+      </div>
+      <div class="text-gray-500">
+       Wins
+      </div>
+     </div>
+     <div>
+      <div id="menu-draws" class="font-bold text-yellow-400">
+       0
+      </div>
+      <div class="text-gray-500">
+       Draws
+      </div>
+     </div>
+     <div>
+      <div id="menu-losses" class="font-bold text-red-400">
+       0
+      </div>
+      <div class="text-gray-500">
+       Losses
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="space-y-3 w-full max-w-sm mb-4"><button onclick="checkAndStartGame()" id="play-btn" class="btn-3d w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-xl uppercase tracking-wider"> ⚽ Play Match </button> <button onclick="showScreen('referral-screen')" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 rounded-xl font-semibold transition-all pulse-animation"> 👥 Invite Friends (+0.0010 TON) </button> <button onclick="showScreen('upgrade-screen')" class="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 rounded-xl font-semibold transition-all"> ⚡ Upgrade Players </button> <button onclick="showScreen('leaderboard-screen')" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 rounded-xl font-semibold transition-all"> 🏆 Leaderboard </button> <button onclick="showScreen('wallet-screen')" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-semibold transition-all"> 💰 TON Wallet </button>
+   </div>
+   <div class="text-center text-xs text-gray-500">
+    <p>📺 Watch ads: <span id="menu-ads">0</span>/10 for bonus</p>
+    <p class="mt-1">👥 Referrals: <span id="menu-referrals">0</span></p>
+   </div>
+  </div>
+
+  <!-- Game Screen (unchanged except dynamic AI name and user color) -->
+  <div id="game-screen" class="screen flex-col h-full">
+   <div class="flex-shrink-0 bg-gradient-to-b from-slate-900/95 to-transparent p-3">
+    <div class="flex items-center justify-between max-w-lg mx-auto">
+     <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold">
+       YOU
+      </div><span id="user-score" class="text-3xl font-black">0</span>
+     </div>
+     <div class="text-center">
+      <div id="game-timer" class="text-2xl font-bold text-cyan-400">
+       3:00
+      </div>
+      <div class="text-xs text-gray-400">
+       TIME
+      </div>
+     </div>
+     <div class="flex items-center gap-3"><span id="ai-score" class="text-3xl font-black">0</span>
+      <div id="ai-team-badge" class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center font-bold text-xs">
+       AI
+      </div>
+     </div>
+    </div>
+    <div class="flex items-center justify-between max-w-lg mx-auto mt-2 text-xs">
+     <div class="flex items-center gap-1">
+      <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+        T
+       </text>
+      </svg><span id="game-coins" class="font-bold text-cyan-400">0.0000</span>
+     </div>
+     <div class="flex items-center gap-2"><span class="text-yellow-400">⚡</span>
+      <div class="w-20 bg-gray-700 rounded-full h-2">
+       <div id="energy-bar" class="energy-bar" style="width: 100%"></div>
+      </div><span id="energy-text" class="text-yellow-400 font-bold">100</span>
+     </div>
+    </div>
+   </div>
+   <div class="flex-1 flex items-center justify-center p-2 overflow-hidden">
+    <div class="field-3d w-full max-w-md">
+     <div id="field" class="field-surface relative w-full aspect-[3/4] rounded-lg mx-auto">
+      <div class="field-lines">
+       <div class="center-line"></div>
+       <div class="center-circle"></div>
+       <div class="penalty-area top"></div>
+       <div class="penalty-area bottom"></div>
+       <div class="goal-area top"></div>
+       <div class="goal-area bottom"></div>
+       <div class="goal-net top"></div>
+       <div class="goal-net bottom"></div>
+      </div>
+      <div id="ball" class="ball" style="left: 50%; top: 50%;"></div>
+     </div>
+    </div>
+   </div>
+   <div class="flex-shrink-0 bg-gradient-to-t from-slate-900 to-transparent p-4">
+    <div class="flex items-center justify-between max-w-lg mx-auto">
+     <div id="joystick" class="joystick-container">
+      <div id="joystick-knob" class="joystick-knob"></div>
+     </div>
+     <div class="flex flex-col gap-3">
+      <div class="flex gap-3"><button id="btn-kick" class="action-btn kick-btn text-white">
+        <div>
+         ⚽
+        </div>
+        <div style="font-size: 9px;">
+         KICK
+        </div></button> <button id="btn-pass" class="action-btn pass-btn text-white">
+        <div>
+         🎯
+        </div>
+        <div style="font-size: 9px;">
+         PASS
+        </div></button>
+      </div><button id="btn-sprint" class="action-btn sprint-btn text-white mx-auto">
+       <div>
+        ⚡
+       </div>
+       <div style="font-size: 9px;">
+        SPRINT
+       </div></button>
+     </div>
+    </div><button onclick="endGame()" class="mt-4 px-6 py-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg text-red-400 text-sm mx-auto block transition-all"> End Match </button>
+   </div>
+  </div>
+
+  <!-- Referral Screen (updated with Telegram deep link) -->
+  <div id="referral-screen" class="screen flex-col min-h-full p-6 scroll-container">
+   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+     </svg></button>
+    <h2 class="game-title text-2xl font-bold">👥 Invite Friends</h2>
+   </div>
+   <div class="stat-card rounded-xl p-6 mb-6 text-center">
+    <div class="text-5xl mb-3">
+     🎁
+    </div>
+    <h3 class="text-2xl font-bold mb-2">Earn TON by Inviting!</h3>
+    <p class="text-gray-400 text-sm mb-4">Get 0.0010 TON for each friend who joins</p>
+    <div class="grid grid-cols-2 gap-4">
+     <div>
+      <div class="flex items-center justify-center gap-1 mb-1">
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span id="referral-earnings" class="text-2xl font-bold text-cyan-400">0.0000</span>
+      </div>
+      <div class="text-xs text-gray-400">
+       Total Earned
+      </div>
+     </div>
+     <div>
+      <div class="text-3xl font-bold text-pink-400" id="referral-count">
+       0
+      </div>
+      <div class="text-xs text-gray-400">
+       Friends Joined
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="stat-card rounded-xl p-5 mb-4"><label class="block text-sm font-semibold mb-2">Your Referral Code</label>
+    <div class="referral-code-box rounded-lg p-4 text-center mb-3">
+     <div id="my-referral-code" class="text-3xl font-black text-white tracking-wider">
+      LOADING...
+     </div>
+    </div><button onclick="copyReferralCode()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-lg font-bold transition-all"> 📋 Copy Code </button>
+   </div>
+   <div class="stat-card rounded-xl p-5 mb-4"><label class="block text-sm font-semibold mb-2">Share on Telegram</label>
+    <p class="text-xs text-gray-400 mb-3">Send your referral link directly to friends</p><button onclick="shareToTelegram()" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
+     <svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
+     </svg> Share to Telegram </button>
+   </div>
+   <div class="stat-card rounded-xl p-5 mb-4"><label class="block text-sm font-semibold mb-2">Copy Invitation Link</label>
+    <div class="flex gap-2"><input type="text" id="referral-link-input" readonly class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-xs" value="Loading..."> <button onclick="copyReferralLink()" class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg font-bold text-sm whitespace-nowrap"> Copy </button>
+    </div>
+   </div>
+   <div id="referral-input-section" class="stat-card rounded-xl p-5"><label class="block text-sm font-semibold mb-2">Have a Referral Code?</label>
+    <p class="text-xs text-gray-400 mb-3">Enter your friend's code to get bonus energy</p>
+    <div class="flex gap-2"><input type="text" id="referral-code-input" placeholder="Enter code (e.g., TON1234ABC)" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white uppercase" maxlength="11"> <button onclick="submitReferralCode()" class="px-4 py-3 bg-gradient-to-r from-pink-500 to-rose-600 rounded-lg font-bold text-sm whitespace-nowrap"> Submit </button>
+    </div>
+    <p id="referral-submit-message" class="text-xs mt-2"></p>
+   </div>
+  </div>
+
+  <!-- Leaderboard Screen with Top Scorers section -->
+  <div id="leaderboard-screen" class="screen flex-col min-h-full p-6">
+   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+     </svg></button>
+    <h2 class="game-title text-2xl font-bold">🏆 Leaderboard</h2>
+   </div>
+   <div class="stat-card rounded-xl p-4 mb-4">
+    <div class="flex items-center justify-between">
+     <div>
+      <div class="text-sm text-gray-400 mb-1">
+       Your Rank
+      </div>
+      <div id="user-rank" class="text-3xl font-black text-cyan-400">
+       #-
+      </div>
+     </div>
+     <div class="text-right">
+      <div class="text-sm text-gray-400 mb-1">
+       Your Score
+      </div>
+      <div class="flex items-center gap-1 justify-end">
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span id="user-leaderboard-coins" class="text-2xl font-bold text-cyan-400">0.0000</span>
+      </div>
+     </div>
+    </div>
+   </div>
+   <!-- Top Scorers -->
+   <div class="stat-card rounded-xl p-4 mb-4">
+    <h3 class="font-bold text-lg mb-2">⚽ Top Scorers</h3>
+    <div id="top-scorers-list" class="space-y-2"></div>
+   </div>
+   <div id="leaderboard-list" class="space-y-2 scroll-container" style="max-height: 40vh;"></div>
+  </div>
+
+  <!-- Upgrade Screen (unchanged) -->
+  <div id="upgrade-screen" class="screen flex-col min-h-full p-6 scroll-container">
+   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+     </svg></button>
+    <h2 class="game-title text-2xl font-bold">⚡ Upgrades</h2>
+   </div>
+   <div class="stat-card rounded-xl p-4 mb-4 text-center">
+    <div class="flex items-center justify-center gap-2 mb-2">
+     <svg class="ton-logo-big" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+       T
+      </text>
+     </svg><span id="upgrade-balance" class="text-4xl font-black text-cyan-400">0.0000</span>
+    </div>
+    <div class="text-sm text-gray-400">
+     Available Balance
+    </div>
+   </div>
+   <div class="space-y-4"><div class="stat-card rounded-xl p-5">
+     <div class="flex items-center gap-4 mb-3">
+      <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-3xl">
+       ⚡
+      </div>
+      <div class="flex-1">
+       <h3 class="font-bold text-lg">Energy Boost</h3>
+       <p class="text-sm text-gray-400">Increase max energy to 150</p>
+      </div>
+     </div>
+     <div class="flex items-center justify-between">
+      <div class="flex items-center gap-1">
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span class="font-bold text-cyan-400">0.0010</span>
+      </div><button onclick="upgradeEnergy()" id="btn-upgrade-energy" class="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg font-bold text-sm"> Upgrade </button>
+     </div>
+    </div><div class="stat-card rounded-xl p-5">
+     <div class="flex items-center gap-4 mb-3">
+      <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl">
+       🎯
+      </div>
+      <div class="flex-1">
+       <h3 class="font-bold text-lg">Player Skills</h3>
+       <p class="text-sm text-gray-400">Level <span id="player-level">1</span> - Better accuracy</p>
+      </div>
+     </div>
+     <div class="flex items-center justify-between">
+      <div class="flex items-center gap-1">
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span id="level-cost" class="font-bold text-cyan-400">0.0015</span>
+      </div><button onclick="upgradeLevel()" id="btn-upgrade-level" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-bold text-sm"> Upgrade </button>
+     </div>
+    </div><div class="stat-card rounded-xl p-5 relative">
+     <div class="flex items-center gap-4 mb-3">
+      <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-3xl">
+       ⭐
+      </div>
+      <div class="flex-1">
+       <h3 class="font-bold text-lg">Super Player</h3>
+       <p class="text-sm text-gray-400">Unlock golden striker with special abilities</p>
+      </div>
+     </div>
+     <div class="flex items-center justify-between">
+      <div class="flex items-center gap-1">
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span class="font-bold text-cyan-400">0.0050</span>
+      </div><button onclick="unlockSuperPlayer()" id="btn-super-player" class="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg font-bold text-sm"> Unlock </button>
+     </div>
+     <div id="super-locked" class="hidden locked-overlay rounded-xl">
+      <div class="text-center">
+       <div class="text-4xl mb-2">
+        🔒
+       </div>
+       <div class="text-sm font-bold">
+        UNLOCKED!
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Wallet Screen (unchanged) -->
+  <div id="wallet-screen" class="screen flex-col min-h-full p-6 scroll-container">
+   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+     </svg></button>
+    <h2 class="game-title text-2xl font-bold">💰 TON Wallet</h2>
+   </div>
+   <div class="stat-card rounded-xl p-6 mb-6 text-center">
+    <svg class="ton-logo-big mx-auto mb-3" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /> <ellipse cx="35" cy="35" rx="15" ry="12" fill="url(#shine)" opacity="0.4" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+      T
+     </text>
+    </svg>
+    <div id="wallet-balance" class="text-4xl font-black text-cyan-400 mb-2">
+     0.0000
+    </div>
+    <div class="text-sm text-gray-400 mb-1">
+     TON Balance
+    </div>
+    <div class="text-xs text-gray-500">
+     ≈ $<span id="wallet-usd">0.00</span> USD
+    </div>
+   </div>
+   <div class="mb-6"><label class="block text-sm font-semibold mb-2">Your TON Wallet Address</label>
+    <div class="flex gap-2"><input type="text" id="wallet-input" placeholder="UQxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white text-sm"> <button onclick="saveWalletAddress()" class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg font-bold text-sm whitespace-nowrap"> Save </button>
+    </div>
+    <p id="wallet-status" class="text-xs mt-2 text-gray-400"></p>
+   </div>
+   <div class="stat-card rounded-xl p-5 mb-4">
+    <h3 class="font-bold mb-3">Withdrawal Info</h3>
+    <div class="space-y-2 text-sm">
+     <div class="flex justify-between"><span class="text-gray-400">Minimum:</span> <span class="font-bold">0.0100 TON</span>
+     </div>
+     <div class="flex justify-between"><span class="text-gray-400">Processing Time:</span> <span class="font-bold">1-24 hours</span>
+     </div>
+     <div class="flex justify-between"><span class="text-gray-400">Network Fee:</span> <span class="font-bold">0.0001 TON</span>
+     </div>
+    </div>
+   </div><button onclick="showWithdrawModal()" id="btn-withdraw" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-bold uppercase tracking-wider transition-all" disabled> 💸 Withdraw TON </button>
+   <p class="text-xs text-center text-gray-500 mt-2">Wallet address required to withdraw</p>
+   <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+    <p class="text-xs text-blue-300"><strong>Note:</strong> Add your TON wallet address to enable withdrawals. Earnings are based on real monetag ad revenue. Keep playing to earn more!</p>
+   </div>
+  </div>
+
+  <!-- VAR Overlay (unchanged) -->
+  <div id="var-overlay" class="celebration-overlay">
+   <div class="celebration-content">
+    <div class="var-overlay rounded-2xl overflow-hidden mb-4" style="width: 300px; height: 200px;">
+     <div id="var-field-clone"></div>
+    </div>
+    <h2 class="game-title text-4xl font-black text-cyan-400 mb-2">VAR REVIEW</h2>
+    <p class="text-xl text-gray-300">Checking goal validity...</p>
+    <div class="mt-4 flex items-center justify-center gap-2">
+     <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+     <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+     <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Celebration Overlay (unchanged) -->
+  <div id="celebration-overlay" class="celebration-overlay">
+   <div class="celebration-content">
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+    <div class="text-8xl mb-4 goal-celebration">
+     ⚽
+    </div>
+    <h2 id="goal-title" class="game-title text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 mb-4">GOAL!</h2>
+    <div class="flex items-center justify-center gap-2 text-2xl"><span class="text-cyan-400">+<span id="goal-reward">0.0005</span></span>
+     <svg class="ton-logo-big" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+       T
+      </text>
+     </svg>
+    </div>
+   </div>
+  </div>
+
+  <!-- Game Over Overlay (Continue button removed) -->
+  <div id="gameover-overlay" class="celebration-overlay">
+   <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
+    <h2 id="gameover-title" class="game-title text-3xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">MATCH COMPLETE</h2>
+    <div class="text-6xl mb-4"><span id="final-user-score">0</span> - <span id="final-ai-score">0</span>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-6">
+     <div class="text-center">
+      <div class="flex items-center justify-center gap-1"><span class="text-cyan-400 font-bold">+</span>
+       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+         T
+        </text>
+       </svg><span id="earned-coins" class="text-xl font-bold text-cyan-400">0.0000</span>
+      </div>
+      <div class="text-sm text-gray-400">
+       Earned
+      </div>
+     </div>
+     <div class="text-center">
+      <div class="text-2xl font-bold text-green-400">
+       <span id="match-goals">0</span> ⚽
+      </div>
+      <div class="text-sm text-gray-400">
+       Goals
+      </div>
+     </div>
+    </div>
+    <div id="ad-unlock-notice" class="hidden mb-4 p-4 bg-purple-500/20 border border-purple-500/50 rounded-xl">
+     <p class="text-sm text-purple-300 font-semibold mb-2">🎁 Unlock Next Match</p>
+     <p class="text-xs text-gray-400">Watch an ad to play again or wait for energy regeneration</p>
+    </div>
+    <div class="space-y-3">
+     <button onclick="showAdReward()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl font-bold uppercase"> 📺 Watch Ad (+0.0005 TON) </button>
+     <!-- Continue button removed -->
+    </div>
+   </div>
+  </div>
+
+  <!-- Ad Screen (updated with Monetag) -->
+  <div id="ad-screen" class="celebration-overlay">
+   <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
+    <div class="text-6xl mb-4">
+     📺
+    </div>
+    <h2 class="game-title text-2xl font-bold mb-4">Monetag Advertisement</h2>
+    <p class="text-gray-400 mb-6">Please wait while the ad plays...</p>
+    <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden">
+     <div id="ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width: 0%; transition: width 1s linear;"></div>
+    </div>
+    <div class="text-4xl font-bold text-cyan-400 mb-2"><span id="ad-timer">30</span>s
+    </div>
+    <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30">
+     <div class="flex items-center justify-center gap-2 mb-1"><span class="text-sm text-gray-300">🎁 Earn</span>
+      <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+        T
+       </text>
+      </svg><span class="text-cyan-400 font-bold">0.0005 TON</span>
+     </div>
+     <p class="text-xs text-gray-400 text-center">+ Restore 20 Energy</p>
+    </div>
+   </div>
+  </div>
+
+  <!-- Withdraw Modal (unchanged) -->
+  <div id="withdraw-modal" class="celebration-overlay">
+   <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4" style="transform: scale(1);">
+    <div class="text-6xl mb-4">
+     💰
+    </div>
+    <h2 class="game-title text-2xl font-bold mb-4">Withdraw TON</h2>
+    <div class="bg-white/10 rounded-xl p-4 mb-6">
+     <div class="text-sm text-gray-400 mb-2">
+      Available Balance
+     </div>
+     <div class="flex items-center justify-center gap-2">
+      <svg class="ton-logo-big" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">
+        T
+       </text>
+      </svg><span id="withdraw-balance" class="text-4xl font-black text-cyan-400">0.0000</span>
+     </div>
+    </div>
+    <div class="mb-6"><label for="withdraw-amount" class="block text-sm text-gray-400 mb-2">Amount (TON)</label>
+     <div class="flex gap-2"><input type="number" id="withdraw-amount" step="0.0001" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white text-center text-xl font-bold" placeholder="0.0000" min="0.0100"> <button onclick="setMaxWithdraw()" class="px-4 py-3 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg text-cyan-400 font-bold transition-all"> MAX </button>
+     </div>
+     <p class="text-xs text-gray-500 mt-2">Min: 0.0100 TON | Fee: 0.0001 TON</p>
+    </div>
+    <div class="space-y-3"><button onclick="processWithdraw()" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-bold uppercase transition-all"> 💸 Confirm Withdrawal </button> <button onclick="closeWithdrawModal()" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition-all"> Cancel </button>
+    </div>
+    <div id="withdraw-message" class="mt-4 p-3 rounded-lg hidden"></div>
+   </div>
+  </div>
+
+  <script>
+    // -------------------- Webhook sender --------------------
+    // REPLACED OLD VERSION WITH SECURE VERSION
+    async function sendToBot(eventType, data = {}) {
+      if (!BJS_WEBHOOK) {
+        console.error("No Webhook URL found in parameters!");
+        return;
+      }
+      
+      // Force HTTPS to prevent 'Mixed Content' blocking on GitHub Pages
+      const secureWebhook = BJS_WEBHOOK.replace("http://", "https://");
+
+      const payload = {
+        event: eventType,
+        user_id: tgUserId,
+        username: tgUsername,
+        ...data,
+        timestamp: Date.now()
+      };
+
+      try {
+        const response = await fetch(secureWebhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+          console.log("Sent to BJs successfully");
+        }
+      } catch (e) {
+        console.warn('Webhook send failed. Check if BJs URL allows CORS.', e);
+      }
+    }
+
+    // -------------------- Force join channel check --------------------
+    let joinedChannel = JOINED_PARAM === '1';
+    if (!joinedChannel) {
+      document.getElementById('join-channel-banner').classList.remove('hidden');
+    }
+
+    async function verifyChannelJoin() {
+      // This will now use the secure version above
+      sendToBot('verify_channel', {});
+      showInlineMessage('Verification requested. Please wait and then click Play again.', 'info');
+    }
+
+
+    // -------------------- Constants --------------------
+    const TON_USD_RATE = 5.20;
+    const GOAL_REWARD = 0.0005;
+    const AD_REWARD = 0.0005;
+    const WIN_BONUS = 0.0010;
+    const REFERRAL_REWARD = 0.0010;
+    const MATCH_DURATION = 180;
+    const ENERGY_COST_PER_MATCH = 15;
+    const AD_DURATION = 30;
+    const MAX_ENERGY = 100;
+    const ENERGY_BOOST_COST = 0.0010;
+    const LEVEL_UP_BASE_COST = 0.0015;
+    const SUPER_PLAYER_COST = 0.0050;
+
+    // AI team names
+    const aiTeamNames = [
+      { name: 'CHE', color: 'from-blue-600 to-blue-800' }, // Chelsea
+      { name: 'MUN', color: 'from-red-600 to-red-800' }, // Man Utd
+      { name: 'ARS', color: 'from-red-500 to-red-700' }, // Arsenal
+      { name: 'LIV', color: 'from-red-500 to-orange-600' }, // Liverpool
+      { name: 'MCI', color: 'from-sky-400 to-sky-600' }, // Man City
+      { name: 'TOT', color: 'from-gray-400 to-gray-600' }, // Tottenham
+      { name: 'NEW', color: 'from-black to-gray-800' } // Newcastle
+    ];
+
+    const defaultConfig = {
+      game_title: 'TON FOOTBALL',
+      welcome_message: 'Play & Earn Real TON Crypto'
+    };
+
+    let config = { ...defaultConfig };
+    let playerData = null;
+    let allPlayersData = [];
+
+    let gameState = {
+      isPlaying: false,
+      userScore: 0,
+      aiScore: 0,
+      timeRemaining: MATCH_DURATION,
+      coinsEarned: 0,
+      goalsThisMatch: 0,
+      selectedPlayer: null,
+      ballPossession: 'user',
+      energy: MAX_ENERGY,
+      maxEnergy: MAX_ENERGY
+    };
+
+    let userPlayers = [];
+    let aiPlayers = [];
+    let ball = { x: 50, y: 50, vx: 0, vy: 0 };
+    let joystickActive = false;
+    let joystickDirection = { x: 0, y: 0 };
+    let buttonStates = { kick: false, pass: false, sprint: false };
+    let gameTimerInterval;
+    let lastTime = 0;
+    let animationFrameId = null;
+
+    // -------------------- Initialize SDK & Data --------------------
+    async function initSDK() {
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (newConfig) => {
+            config = { ...defaultConfig, ...newConfig };
+            updateUI();
+          },
+          mapToCapabilities: (cfg) => ({
+            recolorables: [],
+            borderables: [],
+            fontEditable: undefined,
+            fontSizeable: undefined
+          }),
+          mapToEditPanelValues: (cfg) => new Map([
+            ['game_title', cfg.game_title || defaultConfig.game_title],
+            ['welcome_message', cfg.welcome_message || defaultConfig.welcome_message]
+          ])
+        });
+      }
+
+      if (window.dataSdk) {
+        const dataHandler = {
+          onDataChanged(data) {
+            allPlayersData = data.sort((a, b) => (b.total_coins || 0) - (a.total_coins || 0));
+
+            const savedId = localStorage.getItem('playerId');
+            if (savedId) {
+              playerData = data.find(p => p.id === savedId) || null;
+            }
+
+            if (!playerData && data.length > 0) {
+              playerData = data[0];
+              localStorage.setItem('playerId', playerData.id);
+            }
+
+            // If we have Telegram user, ensure playerData matches
+            if (tgUserId && (!playerData || playerData.telegram_id !== tgUserId)) {
+              // Try to find by telegram_id
+              const existing = data.find(p => p.telegram_id === tgUserId);
+              if (existing) {
+                playerData = existing;
+                localStorage.setItem('playerId', playerData.id);
+              } else {
+                // Create new player with Telegram info
+                createNewTelegramPlayer();
+              }
+            }
+
+            updateStatsDisplay();
+            updateLeaderboard();
+            updateReferralDisplay();
+            updateTopScorers();
+          }
+        };
+
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          console.error('Failed to initialize data SDK');
+        }
+      }
+    }
+
+    async function createNewTelegramPlayer() {
+      const newPlayer = {
+        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        username: tgUsername,
+        first_name: tgFirstName,
+        telegram_id: tgUserId,
+        wallet_address: '',
+        total_coins: 0,
+        goals_scored: 0,
+        games_played: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        high_score: 0,
+        ads_watched: 0,
+        player_energy: MAX_ENERGY,
+        player_level: 1,
+        super_player_unlocked: false,
+        referral_code: generateReferralCode(),
+        referred_by: '',
+        referral_count: 0,
+        referral_earnings: 0,
+        joined_channel: joinedChannel,
+        created_at: new Date().toISOString(),
+        last_played: new Date().toISOString()
+      };
+
+      const result = await window.dataSdk.create(newPlayer);
+      if (result.isOk) {
+        localStorage.setItem('playerId', newPlayer.id);
+        // Send creation event to bot
+        sendToBot('player_created', { player: newPlayer });
+      }
+
+      // Handle referral param if present
+      if (REFERRAL_CODE_PARAM && REFERRAL_CODE_PARAM.startsWith('ref_')) {
+        const code = REFERRAL_CODE_PARAM.replace('ref_', '');
+        setTimeout(() => {
+          showScreen('referral-screen');
+          document.getElementById('referral-code-input').value = code;
+          showInlineMessage('🎁 Enter the referral code to get bonus!', 'success');
+        }, 1000);
+      }
+    }
+
+    function generateReferralCode() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = 'TON';
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    // -------------------- UI Updates --------------------
+    function updateUI() {
+      document.getElementById('main-title').textContent = config.game_title || defaultConfig.game_title;
+      document.getElementById('welcome-msg').textContent = config.welcome_message || defaultConfig.welcome_message;
+    }
+
+    function updateStatsDisplay() {
+      if (!playerData) return;
+
+      const coins = (playerData.total_coins || 0).toFixed(4);
+      const energy = playerData.player_energy || MAX_ENERGY;
+      const maxEnergy = playerData.player_level >= 2 ? 150 : MAX_ENERGY;
+      const wins = playerData.wins || 0;
+      const draws = playerData.draws || 0;
+      const losses = playerData.losses || 0;
+      const adsWatched = playerData.ads_watched || 0;
+      const level = playerData.player_level || 1;
+      const referralCount = playerData.referral_count || 0;
+
+      document.getElementById('menu-coins').textContent = coins;
+      document.getElementById('menu-energy').textContent = energy;
+      document.getElementById('menu-wins').textContent = wins;
+      document.getElementById('menu-draws').textContent = draws;
+      document.getElementById('menu-losses').textContent = losses;
+      document.getElementById('menu-ads').textContent = adsWatched;
+      document.getElementById('menu-referrals').textContent = referralCount;
+
+      document.getElementById('upgrade-balance').textContent = coins;
+      document.getElementById('wallet-balance').textContent = coins;
+      document.getElementById('wallet-usd').textContent = (parseFloat(coins) * TON_USD_RATE).toFixed(2);
+      document.getElementById('player-level').textContent = level;
+
+      const levelCost = (LEVEL_UP_BASE_COST * level).toFixed(4);
+      document.getElementById('level-cost').textContent = levelCost;
+
+      if (playerData.wallet_address) {
+        document.getElementById('wallet-input').value = playerData.wallet_address;
+        document.getElementById('wallet-status').textContent = '✅ Wallet connected';
+        document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
+        document.getElementById('btn-withdraw').disabled = false;
+      }
+
+      if (playerData.super_player_unlocked) {
+        document.getElementById('btn-super-player').textContent = 'Unlocked ✅';
+        document.getElementById('btn-super-player').disabled = true;
+      }
+
+      const canPlay = energy >= ENERGY_COST_PER_MATCH && joinedChannel;
+      const playBtn = document.getElementById('play-btn');
+      if (!canPlay) {
+        if (!joinedChannel) {
+          playBtn.textContent = '🔒 Join Channel to Play';
+        } else {
+          playBtn.textContent = '⚡ Low Energy - Watch Ad';
+        }
+        playBtn.classList.add('opacity-75');
+      } else {
+        playBtn.textContent = '⚽ Play Match';
+        playBtn.classList.remove('opacity-75');
+      }
+
+      gameState.energy = energy;
+      gameState.maxEnergy = maxEnergy;
+    }
+
+    function updateReferralDisplay() {
+      if (!playerData) return;
+
+      const referralCode = playerData.referral_code || 'LOADING...';
+      const referralCount = playerData.referral_count || 0;
+      const referralEarnings = (playerData.referral_earnings || 0).toFixed(4);
+
+      document.getElementById('my-referral-code').textContent = referralCode;
+      document.getElementById('referral-count').textContent = referralCount;
+      document.getElementById('referral-earnings').textContent = referralEarnings;
+
+      // Telegram deep link
+      const botUsername = 'Goal2Ton_bot'; // replace with your bot username
+      const referralLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
+      document.getElementById('referral-link-input').value = referralLink;
+
+      if (playerData.referred_by) {
+        document.getElementById('referral-input-section').innerHTML = `
+          <div class="text-center">
+            <div class="text-4xl mb-2">✅</div>
+            <p class="text-green-400 font-bold">Already using code: ${playerData.referred_by}</p>
+            <p class="text-xs text-gray-400 mt-2">You received bonus energy!</p>
+          </div>
+        `;
+      }
+    }
+
+    function updateLeaderboard() {
+      const list = document.getElementById('leaderboard-list');
+      list.innerHTML = '';
+
+      const topPlayers = allPlayersData.slice(0, 50);
+
+      topPlayers.forEach((player, index) => {
+        const isCurrentUser = playerData && player.id === playerData.id;
+        const entry = document.createElement('div');
+        entry.className = `leaderboard-entry flex items-center justify-between p-4 rounded-xl ${isCurrentUser ? 'bg-cyan-500/20 border-2 border-cyan-500' : 'bg-white/5'}`;
+
+        const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+
+        entry.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="text-2xl font-bold ${index < 3 ? '' : 'text-gray-400'}">${rankEmoji}</div>
+            <div>
+              <div class="font-bold ${isCurrentUser ? 'text-cyan-400' : ''}">${player.username || 'Player'} ${isCurrentUser ? '(You)' : ''}</div>
+              <div class="text-xs text-gray-400">${player.wins || 0}W ${player.draws || 0}D ${player.losses || 0}L</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="flex items-center gap-1 justify-end">
+              <svg class="ton-logo" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/>
+                <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text>
+              </svg>
+              <span class="font-bold text-cyan-400">${(player.total_coins || 0).toFixed(4)}</span>
+            </div>
+            <div class="text-xs text-gray-400">${player.goals_scored || 0} goals</div>
+          </div>
+        `;
+
+        list.appendChild(entry);
+      });
+
+      if (playerData) {
+        const userRank = allPlayersData.findIndex(p => p.id === playerData.id) + 1;
+        document.getElementById('user-rank').textContent = userRank > 0 ? `#${userRank}` : '#-';
+        document.getElementById('user-leaderboard-coins').textContent = (playerData.total_coins || 0).toFixed(4);
+      }
+    }
+
+    function updateTopScorers() {
+      const topScorers = [...allPlayersData].sort((a, b) => (b.goals_scored || 0) - (a.goals_scored || 0)).slice(0, 5);
+      const list = document.getElementById('top-scorers-list');
+      list.innerHTML = topScorers.map((p, i) => `
+        <div class="flex justify-between items-center text-sm">
+          <span>${i+1}. ${p.username || 'Player'}</span>
+          <span class="text-yellow-400 font-bold">${p.goals_scored || 0} ⚽</span>
+        </div>
+      `).join('');
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+
+      if (screenId === 'leaderboard-screen') {
+        updateLeaderboard();
+        updateTopScorers();
+      } else if (screenId === 'referral-screen') {
+        updateReferralDisplay();
+      }
+    }
+
+    // -------------------- Game Functions (unchanged core, but added webhook & team name) --------------------
+    async function checkAndStartGame() {
+      if (!joinedChannel) {
+        showInlineMessage('Please join our Telegram channel first!', 'warning');
+        return;
+      }
+
+      if (!playerData) {
+        // Should have been created by now
+        return;
+      }
+
+      if (gameState.energy < ENERGY_COST_PER_MATCH) {
+        showInlineMessage('Not enough energy! Watch an ad or upgrade energy.', 'warning');
+        return;
+      }
+
+      startGame();
+    }
+
+    function startGame() {
+      gameState = {
+        isPlaying: true,
+        userScore: 0,
+        aiScore: 0,
+        timeRemaining: MATCH_DURATION,
+        coinsEarned: 0,
+        goalsThisMatch: 0,
+        selectedPlayer: null,
+        ballPossession: 'user',
+        energy: gameState.energy - ENERGY_COST_PER_MATCH,
+        maxEnergy: gameState.maxEnergy
+      };
+
+      // Randomize AI team
+      const randomTeam = aiTeamNames[Math.floor(Math.random() * aiTeamNames.length)];
+      document.getElementById('ai-team-badge').textContent = randomTeam.name;
+      document.getElementById('ai-team-badge').className = `w-10 h-10 rounded-full bg-gradient-to-br ${randomTeam.color} flex items-center justify-center font-bold text-xs`;
+
+      // Randomize user team color
+      const userHue = Math.floor(Math.random() * 360);
+      document.querySelectorAll('.player.user').forEach(el => {
+        el.style.background = `linear-gradient(135deg, hsl(${userHue}, 100%, 50%), hsl(${userHue}, 100%, 30%))`;
+      });
+
+      showScreen('game-screen');
+      initializePlayers();
+      resetBall();
+      updateGameHUD();
+
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(gameLoop);
+
+      gameTimerInterval = setInterval(() => {
+        if (gameState.isPlaying && gameState.timeRemaining > 0) {
+          gameState.timeRemaining -= 1;
+          updateGameHUD();
+
+          if (gameState.timeRemaining <= 0) {
+            endGame();
+          }
+        }
+      }, 1000);
+    }
+
+    function initializePlayers() {
+      const field = document.getElementById('field');
+      field.querySelectorAll('.player').forEach(p => p.remove());
+
+      const userPositions = [
+        { x: 50, y: 90, num: 1 }, { x: 20, y: 70, num: 2 }, { x: 40, y: 72, num: 4 },
+        { x: 60, y: 72, num: 5 }, { x: 80, y: 70, num: 3 }, { x: 30, y: 55, num: 6 },
+        { x: 50, y: 50, num: 8 }, { x: 70, y: 55, num: 7 }, { x: 35, y: 35, num: 10 },
+        { x: 50, y: 30, num: 9 }, { x: 65, y: 35, num: 11 }
+      ];
+
+      const aiPositions = [
+        { x: 50, y: 10, num: 1 }, { x: 20, y: 30, num: 2 }, { x: 40, y: 28, num: 4 },
+        { x: 60, y: 28, num: 5 }, { x: 80, y: 30, num: 3 }, { x: 30, y: 45, num: 6 },
+        { x: 50, y: 50, num: 8 }, { x: 70, y: 45, num: 7 }, { x: 35, y: 65, num: 10 },
+        { x: 50, y: 70, num: 9 }, { x: 65, y: 65, num: 11 }
+      ];
+
+      userPlayers = userPositions.map((pos, i) => {
+        const player = document.createElement('div');
+        const isSuper = playerData?.super_player_unlocked && i === 9;
+        player.className = `player ${isSuper ? 'super' : 'user'}`;
+        player.dataset.number = pos.num;
+        player.dataset.index = i;
+        player.style.left = pos.x + '%';
+        player.style.top = pos.y + '%';
+        player.onclick = () => selectPlayer(i, 'user');
+        field.appendChild(player);
+        return { el: player, x: pos.x, y: pos.y, homeX: pos.x, homeY: pos.y, vx: 0, vy: 0, isSuper };
+      });
+
+      aiPlayers = aiPositions.map((pos, i) => {
+        const player = document.createElement('div');
+        player.className = 'player ai';
+        player.dataset.number = pos.num;
+        player.dataset.index = i;
+        player.style.left = pos.x + '%';
+        player.style.top = pos.y + '%';
+        field.appendChild(player);
+        return { el: player, x: pos.x, y: pos.y, homeX: pos.x, homeY: pos.y, vx: 0, vy: 0 };
+      });
+
+      selectNearestPlayer();
+    }
+
+    function selectPlayer(index, team) {
+      if (team !== 'user') return;
+      userPlayers.forEach((p, i) => p.el.classList.toggle('selected', i === index));
+      gameState.selectedPlayer = index;
+    }
+
+    function selectNearestPlayer() {
+      let nearestIdx = 0;
+      let nearestDist = Infinity;
+      userPlayers.forEach((p, i) => {
+        const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIdx = i;
+        }
+      });
+      selectPlayer(nearestIdx, 'user');
+    }
+
+    function resetBall() {
+      ball = { x: 50, y: 50, vx: 0, vy: 0 };
+      updateBallPosition();
+    }
+
+    function updateBallPosition() {
+      document.getElementById('ball').style.left = ball.x + '%';
+      document.getElementById('ball').style.top = ball.y + '%';
+    }
+
+    function gameLoop(timestamp) {
+      if (!gameState.isPlaying) {
+        animationFrameId = null;
+        return;
+      }
+
+      const delta = Math.min((timestamp - lastTime) / 1000, 0.1);
+      lastTime = timestamp;
+
+      if (gameState.selectedPlayer !== null && (joystickDirection.x !== 0 || joystickDirection.y !== 0)) {
+        const player = userPlayers[gameState.selectedPlayer];
+        const baseSpeed = player.isSuper ? 2.5 : 1.2;
+        const speed = buttonStates.sprint ? baseSpeed * 1.5 : baseSpeed;
+
+        player.x += joystickDirection.x * speed;
+        player.y += joystickDirection.y * speed;
+        player.x = Math.max(2, Math.min(98, player.x));
+        player.y = Math.max(2, Math.min(98, player.y));
+        player.el.style.left = player.x + '%';
+        player.el.style.top = player.y + '%';
+
+        const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
+        if (distToBall < 5 && gameState.ballPossession !== 'user') {
+          gameState.ballPossession = 'user';
+        }
+      }
+
+      if (gameState.ballPossession === 'user' && gameState.selectedPlayer !== null) {
+        const player = userPlayers[gameState.selectedPlayer];
+        const offsetY = joystickDirection.y < 0 ? -5 : 5;
+        ball.x += (player.x - ball.x) * 0.3;
+        ball.y += (player.y + offsetY - ball.y) * 0.3;
+      } else if (gameState.ballPossession === 'ai') {
+        const aiAttacker = aiPlayers[9];
+        ball.x += (aiAttacker.x - ball.x) * 0.2;
+        ball.y += (aiAttacker.y + 5 - ball.y) * 0.2;
+      } else {
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        ball.vx *= 0.96;
+        ball.vy *= 0.96;
+
+        if (Math.abs(ball.vx) < 0.05 && Math.abs(ball.vy) < 0.05) {
+          ball.vx = 0;
+          ball.vy = 0;
+
+          let nearestDist = Infinity;
+          let nearestTeam = null;
+          [...userPlayers, ...aiPlayers].forEach((p, i) => {
+            const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
+            if (dist < nearestDist) {
+              nearestDist = dist;
+              nearestTeam = i < userPlayers.length ? 'user' : 'ai';
+            }
+          });
+
+          if (nearestDist < 15) gameState.ballPossession = nearestTeam;
+        }
+
+        if (ball.x < 2 || ball.x > 98) {
+          ball.vx *= -0.7;
+          ball.x = Math.max(2, Math.min(98, ball.x));
+        }
+        if ((ball.y < 2 || ball.y > 98) && (ball.x < 35 || ball.x > 65)) {
+          ball.vy *= -0.7;
+          ball.y = Math.max(2, Math.min(98, ball.y));
+        }
+
+        [...userPlayers, ...aiPlayers].forEach((p, i) => {
+          const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
+          if (dist < 4) {
+            gameState.ballPossession = i < userPlayers.length ? 'user' : 'ai';
+            if (gameState.ballPossession === 'user') selectPlayer(i, 'user');
+          }
+        });
+      }
+
+      checkGoals();
+      updateAI();
+      updateUserTeam();
+      updateBallPosition();
+
+      animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateUserTeam() {
+      userPlayers.forEach((player, i) => {
+        if (i === gameState.selectedPlayer) return;
+
+        let targetX = player.homeX;
+        let targetY = player.homeY;
+
+        if (gameState.ballPossession === 'user') {
+          if (i === 9) {
+            targetX = 50 + (Math.random() - 0.5) * 30;
+            targetY = 15 + Math.random() * 10;
+          } else if (i === 8 || i === 10) {
+            targetX = i === 8 ? 25 : 75;
+            targetY = 25 + Math.random() * 15;
+          } else if (i >= 5 && i <= 7) {
+            targetY = ball.y - 15;
+            targetX = player.homeX + (Math.random() - 0.5) * 20;
+          } else if (i >= 1 && i <= 4) {
+            targetY = 60;
+          }
+        } else if (gameState.ballPossession === 'ai') {
+          const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
+          if (i === 0) {
+            targetX = Math.max(35, Math.min(65, ball.x));
+            targetY = 92;
+          } else if (distToBall < 35) {
+            targetX = ball.x + (Math.random() - 0.5) * 10;
+            targetY = ball.y + (Math.random() - 0.5) * 10;
+          } else {
+            targetY = Math.min(player.homeY, 70);
+          }
+        } else {
+          const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
+          if (distToBall < 30) {
+            targetX = ball.x;
+            targetY = ball.y;
+          }
+        }
+
+        const dx = targetX - player.x;
+        const dy = targetY - player.y;
+        const speedBonus = player.isSuper ? 0.15 : 0;
+        const speed = 0.12 + (i >= 8 ? 0.08 : 0) + speedBonus;
+
+        player.x += dx * speed;
+        player.y += dy * speed;
+        player.x = Math.max(2, Math.min(98, player.x));
+        player.y = Math.max(2, Math.min(98, player.y));
+        player.el.style.left = player.x + '%';
+        player.el.style.top = player.y + '%';
+      });
+    }
+
+    function updateAI() {
+      aiPlayers.forEach((player, i) => {
+        let targetX = player.homeX;
+        let targetY = player.homeY;
+
+        if (gameState.ballPossession === 'ai') {
+          if (i === 9) {
+            targetX = ball.x + (Math.random() - 0.5) * 15;
+            targetY = Math.min(ball.y + 12, 85);
+          } else if (i >= 8) {
+            targetX = ball.x + (i === 8 ? -25 : 25);
+            targetY = ball.y + 8;
+          } else if (i >= 5) {
+            targetY = ball.y + 5;
+          }
+        } else if (gameState.ballPossession === 'user') {
+          if (i === 0) {
+            targetX = Math.max(35, Math.min(65, ball.x));
+            targetY = 8;
+          } else if (i >= 1 && i <= 4) {
+            targetY = Math.max(15, Math.min(30, ball.y - 20));
+            targetX = player.homeX + (Math.random() - 0.5) * 15;
+          } else {
+            const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
+            if (distToBall < 25) {
+              targetX = ball.x + (Math.random() - 0.5) * 15;
+              targetY = ball.y - 10;
+            }
+          }
+        } else {
+          const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
+          if (distToBall < 20 && i !== 0) {
+            targetX = ball.x;
+            targetY = ball.y;
+          }
+        }
+
+        const dx = targetX - player.x;
+        const dy = targetY - player.y;
+        const baseSpeed = 0.08;
+        const speed = baseSpeed + (i >= 8 ? 0.05 : 0);
+
+        player.x += dx * speed;
+        player.y += dy * speed;
+        player.x = Math.max(2, Math.min(98, player.x));
+        player.y = Math.max(2, Math.min(98, player.y));
+        player.el.style.left = player.x + '%';
+        player.el.style.top = player.y + '%';
+
+        const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
+        if (gameState.ballPossession === 'user' && distToBall < 4 && Math.random() < 0.008) {
+          gameState.ballPossession = 'ai';
+        }
+
+        if (gameState.ballPossession === 'ai' && i === 9) {
+          const inShootingRange = player.y > 75 && player.x > 35 && player.x < 65;
+          if (inShootingRange && Math.random() < 0.005) {
+            shootBall('ai');
+          }
+        }
+      });
+    }
+
+    function checkGoals() {
+      if (ball.y < 3 && ball.x > 35 && ball.x < 65) {
+        if (Math.abs(ball.vy) > 0.5 || (gameState.ballPossession === 'user' && ball.vy < -0.2)) {
+          scoreGoal('user');
+          return;
+        }
+      }
+
+      if (ball.y > 97 && ball.x > 35 && ball.x < 65) {
+        if (Math.abs(ball.vy) > 1.2 || (gameState.ballPossession === 'ai' && ball.vy > 0.8)) {
+          scoreGoal('ai');
+          return;
+        }
+      }
+
+      if ((ball.y < 5 || ball.y > 95) && ball.x > 35 && ball.x < 65) {
+        if (Math.abs(ball.vx) < 0.5 && Math.abs(ball.vy) < 1.0) {
+          ball.vx = 0;
+          ball.vy = 0;
+        }
+      }
+    }
+
+    function scoreGoal(team) {
+      gameState.isPlaying = false;
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      showVARReview(() => {
+        if (team === 'user') {
+          gameState.userScore++;
+          gameState.goalsThisMatch++;
+          gameState.coinsEarned += GOAL_REWARD;
+
+          // Send goal event to bot
+          sendToBot('goal_scored', {
+            match_id: Date.now(),
+            goal_number: gameState.goalsThisMatch,
+            coins_earned: GOAL_REWARD
+          });
+
+          document.getElementById('goal-reward').textContent = GOAL_REWARD.toFixed(4);
+          showCelebration();
+        } else {
+          gameState.aiScore++;
+        }
+
+        updateGameHUD();
+
+        setTimeout(() => {
+          initializePlayers();
+          resetBall();
+          gameState.ballPossession = team === 'user' ? 'ai' : 'user';
+          gameState.isPlaying = true;
+          lastTime = performance.now();
+          animationFrameId = requestAnimationFrame(gameLoop);
+        }, team === 'user' ? 3000 : 1500);
+      });
+    }
+
+    function showVARReview(callback) {
+      const overlay = document.getElementById('var-overlay');
+      overlay.classList.add('active');
+
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        callback();
+      }, 2000);
+    }
+
+    function showCelebration() {
+      const overlay = document.getElementById('celebration-overlay');
+      overlay.classList.add('active');
+
+      const container = document.getElementById('confetti-container');
+      container.innerHTML = '';
+
+      const colors = ['#ffcc00', '#00ccff', '#ff6600', '#00ff66', '#ff00ff'];
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti-piece';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.top = '-20px';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        container.appendChild(confetti);
+      }
+
+      setTimeout(() => overlay.classList.remove('active'), 2500);
+    }
+
+    function shootBall(team) {
+      gameState.ballPossession = 'none';
+
+      if (team === 'user') {
+        const currentPlayer = userPlayers[gameState.selectedPlayer];
+        const accuracyBonus = currentPlayer.isSuper ? 10 : (playerData?.player_level || 1) * 2;
+        const aimX = 50 + (Math.random() - 0.5) * (20 - accuracyBonus);
+        const dx = (aimX - currentPlayer.x) * 0.15;
+        const powerBonus = currentPlayer.isSuper ? 3 : 0;
+
+        ball.vx = dx;
+        ball.vy = -12 - powerBonus;
+      } else {
+        const aimX = 50 + (Math.random() - 0.5) * 25;
+        const aiAttacker = aiPlayers[9];
+        const dx = (aimX - aiAttacker.x) * 0.1;
+
+        ball.vx = dx;
+        ball.vy = 8;
+      }
+    }
+
+    function passBall() {
+      if (gameState.ballPossession !== 'user') return;
+
+      let nearestIdx = -1;
+      let nearestDist = Infinity;
+      const currentPlayer = userPlayers[gameState.selectedPlayer];
+
+      const passDirection = { x: joystickDirection.x, y: joystickDirection.y };
+      const hasPressDirection = Math.abs(passDirection.x) > 0.1 || Math.abs(passDirection.y) > 0.1;
+
+      userPlayers.forEach((p, i) => {
+        if (i === gameState.selectedPlayer) return;
+
+        const dx = p.x - currentPlayer.x;
+        const dy = p.y - currentPlayer.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (hasPressDirection) {
+          const dotProduct = (dx * passDirection.x + dy * passDirection.y) / dist;
+          if (dotProduct > 0.5 && dist < 50 && dist < nearestDist) {
+            nearestDist = dist;
+            nearestIdx = i;
+          }
+        } else {
+          if (dist < nearestDist && dist < 40) {
+            nearestDist = dist;
+            nearestIdx = i;
+          }
+        }
+      });
+
+      if (nearestIdx >= 0) {
+        const target = userPlayers[nearestIdx];
+        gameState.ballPossession = 'none';
+        ball.vx = (target.x - ball.x) * 0.2;
+        ball.vy = (target.y - ball.y) * 0.2;
+
+        setTimeout(() => {
+          if (gameState.ballPossession === 'user') {
+            selectPlayer(nearestIdx, 'user');
+          }
+        }, 300);
+      }
+    }
+
+    function updateGameHUD() {
+      document.getElementById('user-score').textContent = gameState.userScore;
+      document.getElementById('ai-score').textContent = gameState.aiScore;
+      document.getElementById('game-coins').textContent = gameState.coinsEarned.toFixed(4);
+
+      const mins = Math.floor(gameState.timeRemaining / 60);
+      const secs = gameState.timeRemaining % 60;
+      document.getElementById('game-timer').textContent = 
+        `${mins}:${secs.toString().padStart(2, '0')}`;
+
+      const energyPercent = (gameState.energy / gameState.maxEnergy) * 100;
+      document.getElementById('energy-bar').style.width = energyPercent + '%';
+      document.getElementById('energy-text').textContent = gameState.energy;
+    }
+
+    async function endGame() {
+      gameState.isPlaying = false;
+      clearInterval(gameTimerInterval);
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      let bonusCoins = 0;
+      let result = '';
+
+      if (gameState.userScore > gameState.aiScore) {
+        bonusCoins += WIN_BONUS;
+        result = 'win';
+        document.getElementById('gameover-title').textContent = 'VICTORY! 🏆';
+        document.getElementById('goal-title').textContent = 'VICTORY!';
+      } else if (gameState.userScore < gameState.aiScore) {
+        result = 'loss';
+        document.getElementById('gameover-title').textContent = 'DEFEAT 😢';
+      } else {
+        result = 'draw';
+        document.getElementById('gameover-title').textContent = 'DRAW 🤝';
+      }
+
+      gameState.coinsEarned += bonusCoins;
+
+      document.getElementById('final-user-score').textContent = gameState.userScore;
+      document.getElementById('final-ai-score').textContent = gameState.aiScore;
+      document.getElementById('earned-coins').textContent = gameState.coinsEarned.toFixed(4);
+      document.getElementById('match-goals').textContent = gameState.goalsThisMatch;
+
+      if (gameState.energy < ENERGY_COST_PER_MATCH) {
+        document.getElementById('ad-unlock-notice').classList.remove('hidden');
+      } else {
+        document.getElementById('ad-unlock-notice').classList.add('hidden');
+      }
+
+      document.getElementById('gameover-overlay').classList.add('active');
+
+      await saveStats(result);
+
+      // Send match end to bot
+      sendToBot('match_end', {
+        result,
+        user_score: gameState.userScore,
+        ai_score: gameState.aiScore,
+        coins_earned: gameState.coinsEarned,
+        goals: gameState.goalsThisMatch
+      });
+    }
+
+    async function saveStats(result) {
+      if (!window.dataSdk || !playerData) return;
+
+      const updatedData = {
+        ...playerData,
+        total_coins: (playerData.total_coins || 0) + gameState.coinsEarned,
+        goals_scored: (playerData.goals_scored || 0) + gameState.goalsThisMatch,
+        games_played: (playerData.games_played || 0) + 1,
+        wins: (playerData.wins || 0) + (result === 'win' ? 1 : 0),
+        losses: (playerData.losses || 0) + (result === 'loss' ? 1 : 0),
+        draws: (playerData.draws || 0) + (result === 'draw' ? 1 : 0),
+        high_score: Math.max(playerData.high_score || 0, gameState.userScore),
+        player_energy: gameState.energy,
+        last_played: new Date().toISOString()
+      };
+
+      const saveResult = await window.dataSdk.update(updatedData);
+      if (!saveResult.isOk) {
+        console.error('Failed to update stats');
+      }
+    }
+
+    // -------------------- Ad Reward (Monetag integration) --------------------
+    function showAdReward() {
+      document.getElementById('gameover-overlay').classList.remove('active');
+      // Show ad screen with timer
+      document.getElementById('ad-screen').classList.add('active');
+
+      // Use Monetag rewarded ad
+      if (typeof show_10656450 === 'function') {
+        show_10656450('pop').then(() => {
+          // User watched ad successfully
+          completeAdReward();
+        }).catch(e => {
+          // Ad failed or was closed early
+          document.getElementById('ad-screen').classList.remove('active');
+          showInlineMessage('Ad not completed. Try again.', 'warning');
+        });
+      } else {
+        // Fallback simulation
+        let timeLeft = AD_DURATION;
+        const timerEl = document.getElementById('ad-timer');
+        const progressEl = document.getElementById('ad-progress');
+
+        const adInterval = setInterval(() => {
+          timeLeft--;
+          timerEl.textContent = timeLeft;
+          progressEl.style.width = ((AD_DURATION - timeLeft) / AD_DURATION * 100) + '%';
+
+          if (timeLeft <= 0) {
+            clearInterval(adInterval);
+            completeAdReward();
+          }
+        }, 1000);
+      }
+    }
+
+    async function completeAdReward() {
+      if (!playerData) return;
+
+      const energyRestore = 20;
+      const newEnergy = Math.min(gameState.maxEnergy, gameState.energy + energyRestore);
+
+      const updatedData = {
+        ...playerData,
+        total_coins: (playerData.total_coins || 0) + AD_REWARD,
+        ads_watched: (playerData.ads_watched || 0) + 1,
+        player_energy: newEnergy
+      };
+
+      const result = await window.dataSdk.update(updatedData);
+
+      if (result.isOk) {
+        document.getElementById('ad-screen').classList.remove('active');
+        showScreen('menu-screen');
+        showInlineMessage(`🎁 +${AD_REWARD.toFixed(4)} TON & +${energyRestore} Energy earned!`, 'success');
+        sendToBot('ad_watched', { reward: AD_REWARD, energy_restore: energyRestore });
+      }
+    }
+
+    // -------------------- Upgrade Functions (unchanged, but add webhook) --------------------
+    async function upgradeEnergy() {
+      if (!playerData) return;
+
+      if (playerData.total_coins < ENERGY_BOOST_COST) {
+        showInlineMessage('Not enough TON!', 'error');
+        return;
+      }
+
+      if (playerData.player_level >= 2) {
+        showInlineMessage('Already upgraded!', 'warning');
+        return;
+      }
+
+      const updatedData = {
+        ...playerData,
+        total_coins: playerData.total_coins - ENERGY_BOOST_COST,
+        player_level: 2,
+        player_energy: 150
+      };
+
+      const result = await window.dataSdk.update(updatedData);
+      if (result.isOk) {
+        showInlineMessage('⚡ Energy upgraded to 150!', 'success');
+        document.getElementById('btn-upgrade-energy').textContent = 'Upgraded ✅';
+        document.getElementById('btn-upgrade-energy').disabled = true;
+        sendToBot('upgrade', { type: 'energy' });
+      }
+    }
+
+    async function upgradeLevel() {
+      if (!playerData) return;
+
+      const level = playerData.player_level || 1;
+      const cost = LEVEL_UP_BASE_COST * level;
+
+      if (playerData.total_coins < cost) {
+        showInlineMessage('Not enough TON!', 'error');
+        return;
+      }
+
+      const updatedData = {
+        ...playerData,
+        total_coins: playerData.total_coins - cost,
+        player_level: level + 1
+      };
+
+      const result = await window.dataSdk.update(updatedData);
+      if (result.isOk) {
+        showInlineMessage(`🎯 Player upgraded to Level ${level + 1}!`, 'success');
+        sendToBot('upgrade', { type: 'skill', new_level: level + 1 });
+      }
+    }
+
+    async function unlockSuperPlayer() {
+      if (!playerData) return;
+
+      if (playerData.super_player_unlocked) {
+        showInlineMessage('Already unlocked!', 'warning');
+        return;
+      }
+
+      if (playerData.total_coins < SUPER_PLAYER_COST) {
+        showInlineMessage('Not enough TON!', 'error');
+        return;
+      }
+
+      const updatedData = {
+        ...playerData,
+        total_coins: playerData.total_coins - SUPER_PLAYER_COST,
+        super_player_unlocked: true
+      };
+
+      const result = await window.dataSdk.update(updatedData);
+      if (result.isOk) {
+        showInlineMessage('⭐ Super Player unlocked!', 'success');
+        document.getElementById('super-locked').classList.remove('hidden');
+        sendToBot('upgrade', { type: 'super_player' });
+      }
+    }
+
+    // -------------------- Wallet & Withdraw (add webhook) --------------------
+    async function saveWalletAddress() {
+      if (!playerData) return;
+
+      const address = document.getElementById('wallet-input').value.trim();
+
+      if (!address || address.length < 48) {
+        showInlineMessage('Invalid TON wallet address', 'error');
+        return;
+      }
+
+      const updatedData = {
+        ...playerData,
+        wallet_address: address
+      };
+
+      const result = await window.dataSdk.update(updatedData);
+      if (result.isOk) {
+        document.getElementById('wallet-status').textContent = '✅ Wallet connected';
+        document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
+        document.getElementById('btn-withdraw').disabled = false;
+        showInlineMessage('Wallet address saved!', 'success');
+        sendToBot('wallet_saved', { address });
+      }
+    }
+
+    function showWithdrawModal() {
+      if (!playerData?.wallet_address) {
+        showInlineMessage('Please add your wallet address first', 'warning');
+        return;
+      }
+
+      document.getElementById('withdraw-modal').classList.add('active');
+      document.getElementById('withdraw-balance').textContent = (playerData?.total_coins || 0).toFixed(4);
+      document.getElementById('withdraw-amount').value = '';
+      document.getElementById('withdraw-message').classList.add('hidden');
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById('withdraw-modal').classList.remove('active');
+    }
+
+    function setMaxWithdraw() {
+      const balance = playerData?.total_coins || 0;
+      const fee = 0.0001;
+      const max = Math.max(0, balance - fee);
+      document.getElementById('withdraw-amount').value = max.toFixed(4);
+    }
+
+    async function processWithdraw() {
+      const amount = parseFloat(document.getElementById('withdraw-amount').value);
+      const balance = playerData?.total_coins || 0;
+      const msgEl = document.getElementById('withdraw-message');
+      const minWithdraw = 0.0100;
+      const fee = 0.0001;
+
+      msgEl.classList.remove('hidden');
+
+      if (!amount || amount < minWithdraw) {
+        msgEl.className = 'mt-4 p-3 rounded-lg bg-red-500/20 text-red-400';
+        msgEl.textContent = `❌ Minimum withdrawal is ${minWithdraw} TON`;
+        return;
+      }
+
+      if (amount + fee > balance) {
+        msgEl.className = 'mt-4 p-3 rounded-lg bg-red-500/20 text-red-400';
+        msgEl.textContent = '❌ Insufficient balance (including fee)';
+        return;
+      }
+
+      const updatedData = {
+        ...playerData,
+        total_coins: balance - amount - fee
+      };
+
+      const result = await window.dataSdk.update(updatedData);
+
+      if (result.isOk) {
+        msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
+        msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours.`;
+
+        // Send withdrawal request to bot
+        sendToBot('withdraw_request', {
+          amount,
+          address: playerData.wallet_address,
+          fee
+        });
+
+        setTimeout(() => {
+          closeWithdrawModal();
+          showScreen('menu-screen');
+        }, 3000);
+      } else {
+        msgEl.className = 'mt-4 p-3 rounded-lg bg-red-500/20 text-red-400';
+        msgEl.textContent = '❌ Withdrawal failed. Please try again.';
+      }
+    }
+
+    // -------------------- Referral Functions (add webhook) --------------------
+    function copyReferralCode() {
+      const code = playerData?.referral_code || '';
+      if (!code || code === 'LOADING...') return;
+
+      navigator.clipboard.writeText(code).then(() => {
+        showInlineMessage('✅ Referral code copied!', 'success');
+      });
+    }
+
+    function copyReferralLink() {
+      const link = document.getElementById('referral-link-input').value;
+      navigator.clipboard.writeText(link).then(() => {
+        showInlineMessage('✅ Referral link copied!', 'success');
+      });
+    }
+
+    function shareToTelegram() {
+      const code = playerData?.referral_code || '';
+      const link = document.getElementById('referral-link-input').value;
+      const message = `🎮 Join me in TON Football Championship and earn real TON crypto!\n\n⚽ Play matches, score goals, and earn rewards!\n💰 Use my code: ${code}\n\n${link}`;
+
+      const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
+      window.open(telegramUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    async function submitReferralCode() {
+      if (!playerData) return;
+
+      if (playerData.referred_by) {
+        showInlineMessage('You already used a referral code!', 'warning');
+        return;
+      }
+
+      const inputCode = document.getElementById('referral-code-input').value.trim().toUpperCase();
+
+      if (!inputCode || inputCode.length !== 11 || !inputCode.startsWith('TON')) {
+        showInlineMessage('❌ Invalid code format!', 'error');
+        return;
+      }
+
+      if (inputCode === playerData.referral_code) {
+        showInlineMessage('❌ Cannot use your own code!', 'error');
+        return;
+      }
+
+      const referrer = allPlayersData.find(p => p.referral_code === inputCode);
+
+      if (!referrer) {
+        showInlineMessage('❌ Code not found!', 'error');
+        return;
+      }
+
+      const bonusEnergy = 30;
+      const newEnergy = Math.min(gameState.maxEnergy, (playerData.player_energy || MAX_ENERGY) + bonusEnergy);
+
+      const updatedPlayer = {
+        ...playerData,
+        referred_by: inputCode,
+        player_energy: newEnergy
+      };
+
+      const updatedReferrer = {
+        ...referrer,
+        referral_count: (referrer.referral_count || 0) + 1,
+        referral_earnings: (referrer.referral_earnings || 0) + REFERRAL_REWARD,
+        total_coins: (referrer.total_coins || 0) + REFERRAL_REWARD
+      };
+
+      const result1 = await window.dataSdk.update(updatedPlayer);
+      const result2 = await window.dataSdk.update(updatedReferrer);
+
+      if (result1.isOk && result2.isOk) {
+        showInlineMessage(`✅ Code applied! +${bonusEnergy} Energy bonus!`, 'success');
+        document.getElementById('referral-code-input').value = '';
+        // Send referral event to bot
+        sendToBot('referral_used', {
+          referrer_code: inputCode,
+          referrer_id: referrer.id,
+          bonus_energy: bonusEnergy,
+          reward: REFERRAL_REWARD
+        });
+      } else {
+        showInlineMessage('❌ Failed to apply code', 'error');
+      }
+    }
+
+    // -------------------- Utility --------------------
+    function showInlineMessage(message, type) {
+      const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-yellow-500',
+        info: 'bg-blue-500'
+      };
+
+      const tempMsg = document.createElement('div');
+      tempMsg.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${colors[type]} text-white px-6 py-3 rounded-lg font-bold z-50 shadow-lg`;
+      tempMsg.textContent = message;
+      document.body.appendChild(tempMsg);
+
+      setTimeout(() => tempMsg.remove(), 3000);
+    }
+
+    // -------------------- Controls (unchanged) --------------------
+    function initControls() {
+      const joystick = document.getElementById('joystick');
+      const knob = document.getElementById('joystick-knob');
+      const maxDist = 35;
+
+      function handleJoystick(clientX, clientY) {
+        const rect = joystick.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        let dx = clientX - centerX;
+        let dy = clientY - centerY;
+
+        const dist = Math.hypot(dx, dy);
+        if (dist > maxDist) {
+          dx = (dx / dist) * maxDist;
+          dy = (dy / dist) * maxDist;
+        }
+
+        knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        joystickDirection = { x: dx / maxDist, y: dy / maxDist };
+      }
+
+      function resetJoystick() {
+        knob.style.transform = 'translate(-50%, -50%)';
+        joystickDirection = { x: 0, y: 0 };
+        joystickActive = false;
+      }
+
+      joystick.addEventListener('mousedown', (e) => {
+        joystickActive = true;
+        handleJoystick(e.clientX, e.clientY);
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (joystickActive) handleJoystick(e.clientX, e.clientY);
+      });
+
+      document.addEventListener('mouseup', resetJoystick);
+
+      joystick.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        handleJoystick(e.touches[0].clientX, e.touches[0].clientY);
+      });
+
+      document.addEventListener('touchmove', (e) => {
+        if (joystickActive) {
+          e.preventDefault();
+          handleJoystick(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: false });
+
+      document.addEventListener('touchend', (e) => {
+        if (joystickActive) resetJoystick();
+      });
+
+      const kickBtn = document.getElementById('btn-kick');
+      kickBtn.addEventListener('mousedown', () => {
+        buttonStates.kick = true;
+        kickBtn.classList.add('pressed');
+        if (gameState.ballPossession === 'user') shootBall('user');
+      });
+      kickBtn.addEventListener('mouseup', () => {
+        buttonStates.kick = false;
+        kickBtn.classList.remove('pressed');
+      });
+      kickBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        buttonStates.kick = true;
+        kickBtn.classList.add('pressed');
+        if (gameState.ballPossession === 'user') shootBall('user');
+      });
+      kickBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        buttonStates.kick = false;
+        kickBtn.classList.remove('pressed');
+      });
+
+      const passBtn = document.getElementById('btn-pass');
+      passBtn.addEventListener('mousedown', () => {
+        buttonStates.pass = true;
+        passBtn.classList.add('pressed');
+        passBall();
+      });
+      passBtn.addEventListener('mouseup', () => {
+        buttonStates.pass = false;
+        passBtn.classList.remove('pressed');
+      });
+      passBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        buttonStates.pass = true;
+        passBtn.classList.add('pressed');
+        passBall();
+      });
+      passBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        buttonStates.pass = false;
+        passBtn.classList.remove('pressed');
+      });
+
+      const sprintBtn = document.getElementById('btn-sprint');
+      sprintBtn.addEventListener('mousedown', () => {
+        buttonStates.sprint = true;
+        sprintBtn.classList.add('pressed');
+      });
+      sprintBtn.addEventListener('mouseup', () => {
+        buttonStates.sprint = false;
+        sprintBtn.classList.remove('pressed');
+      });
+      sprintBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        buttonStates.sprint = true;
+        sprintBtn.classList.add('pressed');
+      });
+      sprintBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        buttonStates.sprint = false;
+        sprintBtn.classList.remove('pressed');
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (!gameState.isPlaying) return;
+
+        switch(e.key) {
+          case 'ArrowUp':
+          case 'w':
+          case 'W':
+            joystickDirection.y = -1;
+            break;
+          case 'ArrowDown':
+          case 's':
+          case 'S':
+            joystickDirection.y = 1;
+            break;
+          case 'ArrowLeft':
+          case 'a':
+          case 'A':
+            joystickDirection.x = -1;
+            break;
+          case 'ArrowRight':
+          case 'd':
+          case 'D':
+            joystickDirection.x = 1;
+            break;
+          case ' ':
+            e.preventDefault();
+            if (gameState.ballPossession === 'user') shootBall('user');
+            break;
+          case 'Shift':
+            buttonStates.sprint = true;
+            break;
+          case 'e':
+          case 'E':
+            passBall();
+            break;
+        }
+      });
+
+      document.addEventListener('keyup', (e) => {
+        switch(e.key) {
+          case 'ArrowUp':
+          case 'w':
+          case 'W':
+          case 'ArrowDown':
+          case 's':
+          case 'S':
+            joystickDirection.y = 0;
+            break;
+          case 'ArrowLeft':
+          case 'a':
+          case 'A':
+          case 'ArrowRight':
+          case 'd':
+          case 'D':
+            joystickDirection.x = 0;
+            break;
+          case 'Shift':
+            buttonStates.sprint = false;
+            break;
+        }
+      });
+    }
+
+    // -------------------- Start --------------------
+    initSDK();
+    initControls();
+    updateUI();
+
+    // If there's a referral param, show message
+    if (REFERRAL_CODE_PARAM && REFERRAL_CODE_PARAM.startsWith('ref_')) {
+      setTimeout(() => {
+        showInlineMessage('Referral code detected! Go to Invite Friends to claim bonus.', 'info');
+      }, 2000);
+    }
+  </script>
+ </body>
+</html>
