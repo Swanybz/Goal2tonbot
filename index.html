@@ -1001,7 +1001,7 @@
    </div>
   </div>
 
-  <script>
+    <script>
     // Global error handler
     window.onerror = function(msg, url, line) {
       console.error('Global error:', msg, 'at', url, 'line', line);
@@ -1009,9 +1009,10 @@
       return false;
     };
 
-    // -------------------- DECODE START PARAMETER (BRIDGE) --------------------
+    // -------------------- DECODE DATA PARAMETER (FIXED BRIDGE) --------------------
     const urlParams = new URLSearchParams(window.location.search);
-    const startParam = urlParams.get('start');
+    // BJs Pro uses ?data=, fall back to ?start= for older links
+    const startParam = urlParams.get('data') || urlParams.get('start');
 
     let BJS_WEBHOOK = null;
     let TELEGRAM_UID = null;
@@ -1028,13 +1029,14 @@
         const data = JSON.parse(decodedStr);
         console.log('Decoded start data:', data);
 
-        // Extract values
+        // Extract values using BJs Pro keys
         TELEGRAM_UID = data.user_id || data.user?.user_id;
-        TELEGRAM_USERNAME = data.user?.username || 'Player';
-        TELEGRAM_FIRST_NAME = data.user?.first_name || 'Player';
+        TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
+        TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
         BJS_WEBHOOK = data.webhook;
-        IS_JOINED = data.joined === 1;
-        REFERRAL_CODE = data.ref !== 'none' ? data.ref : null;
+        // BJs sends "1" for true, "0" for false
+        IS_JOINED = (data.joined === 1 || data.joined === "1");
+        REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
         REFERRAL_COUNT = data.ref_count || 0;
       } catch (e) {
         console.error('Failed to decode start param:', e);
@@ -1080,11 +1082,18 @@
 
     // -------------------- Force join channel check --------------------
     let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
-    if (!joinedChannel) {
-      document.getElementById('join-channel-banner').classList.remove('hidden');
-    } else {
-      document.getElementById('join-channel-banner').classList.add('hidden');
-    }
+    
+    // UI sync for join banner
+    document.addEventListener('DOMContentLoaded', () => {
+      const banner = document.getElementById('join-channel-banner');
+      if (banner) {
+        if (!joinedChannel) {
+          banner.classList.remove('hidden');
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+    });
 
     async function verifyChannelJoin() {
       showInlineMessage('Verifying...', 'info');
@@ -1214,8 +1223,9 @@
     }
 
     async function createNewTelegramPlayer() {
+      // Use Telegram UID as part of ID for consistency
       const newPlayer = {
-        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        id: 'player_' + TELEGRAM_UID + '_' + Math.random().toString(36).substr(2, 4),
         username: TELEGRAM_USERNAME,
         first_name: TELEGRAM_FIRST_NAME,
         telegram_id: TELEGRAM_UID,
@@ -2046,6 +2056,7 @@
         sendToBot('ad_watched', { reward: AD_REWARD, energy_restore: energyRestore });
       }
     }
+
 
     // -------------------- Upgrade Functions --------------------
     async function upgradeEnergy() {
