@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://element-sdk.b-cdn.net/data-sdk/v1/data-sdk.js"></script>
   <!-- Monetag Ad SDK -->
   <script src='//libtl.com/sdk.js' data-zone='10656450' data-sdk='show_10656450'></script>
   <script src="/_sdk/element_sdk.js"></script>
@@ -483,10 +484,13 @@
       font-family: 'Orbitron', monospace;
       letter-spacing: 2px;
     }
+    
+    
   </style>
   <style>@view-transition { navigation: auto; }</style>
  </head>
  <body class="h-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white overflow-auto">
+  <!-- menu-screen, game-screen, etc. (exactly as before) -->
   <div id="menu-screen" class="screen active flex-col items-center justify-center min-h-full p-6">
    <div class="text-center mb-6">
     <svg class="w-24 h-24 mx-auto mb-4" viewbox="0 0 100 100"><defs>
@@ -565,7 +569,7 @@
    </div>
   </div>
 
-  <!-- Game Screen (unchanged except dynamic AI name and user color) -->
+  <!-- Game Screen -->
   <div id="game-screen" class="screen flex-col h-full">
    <div class="flex-shrink-0 bg-gradient-to-b from-slate-900/95 to-transparent p-3">
     <div class="flex items-center justify-between max-w-lg mx-auto">
@@ -582,10 +586,10 @@
        TIME
       </div>
      </div>
-     <div class="flex items-center gap-3"><span id="ai-score" class="text-3xl font-black">0</span>
-      <div id="ai-team-badge" class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center font-bold text-xs">
-       AI
-      </div>
+     <div class="flex items-center gap-3">
+      <span id="ai-score" class="text-3xl font-black">0</span>
+      <!-- AI Team Badge - fixed to G2T -->
+      <div id="ai-team-badge" class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center font-bold text-xs">G2T</div>
      </div>
     </div>
     <div class="flex items-center justify-between max-w-lg mx-auto mt-2 text-xs">
@@ -650,7 +654,7 @@
    </div>
   </div>
 
-  <!-- Referral Screen (updated with Telegram deep link) -->
+  <!-- Referral Screen -->
   <div id="referral-screen" class="screen flex-col min-h-full p-6 scroll-container">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -709,7 +713,7 @@
    </div>
   </div>
 
-  <!-- Leaderboard Screen with Top Scorers section -->
+  <!-- Leaderboard Screen -->
   <div id="leaderboard-screen" class="screen flex-col min-h-full p-6">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -739,15 +743,10 @@
      </div>
     </div>
    </div>
-   <!-- Top Scorers -->
-   <div class="stat-card rounded-xl p-4 mb-4">
-    <h3 class="font-bold text-lg mb-2">⚽ Top Scorers</h3>
-    <div id="top-scorers-list" class="space-y-2"></div>
-   </div>
-   <div id="leaderboard-list" class="space-y-2 scroll-container" style="max-height: 40vh;"></div>
+   <div id="leaderboard-list" class="space-y-2 scroll-container" style="max-height: 60vh;"></div>
   </div>
 
-  <!-- Upgrade Screen (unchanged) -->
+  <!-- Upgrade Screen -->
   <div id="upgrade-screen" class="screen flex-col min-h-full p-6 scroll-container">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -765,7 +764,8 @@
      Available Balance
     </div>
    </div>
-   <div class="space-y-4"><div class="stat-card rounded-xl p-5">
+   <div class="space-y-4">
+    <div class="stat-card rounded-xl p-5">
      <div class="flex items-center gap-4 mb-3">
       <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-3xl">
        ⚡
@@ -783,7 +783,8 @@
        </svg><span class="font-bold text-cyan-400">0.0010</span>
       </div><button onclick="upgradeEnergy()" id="btn-upgrade-energy" class="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg font-bold text-sm"> Upgrade </button>
      </div>
-    </div><div class="stat-card rounded-xl p-5">
+    </div>
+    <div class="stat-card rounded-xl p-5">
      <div class="flex items-center gap-4 mb-3">
       <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl">
        🎯
@@ -801,7 +802,8 @@
        </svg><span id="level-cost" class="font-bold text-cyan-400">0.0015</span>
       </div><button onclick="upgradeLevel()" id="btn-upgrade-level" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-bold text-sm"> Upgrade </button>
      </div>
-    </div><div class="stat-card rounded-xl p-5 relative">
+    </div>
+    <div class="stat-card rounded-xl p-5 relative">
      <div class="flex items-center gap-4 mb-3">
       <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-3xl">
        ⭐
@@ -833,7 +835,7 @@
    </div>
   </div>
 
-  <!-- Wallet Screen (unchanged) -->
+  <!-- Wallet Screen -->
   <div id="wallet-screen" class="screen flex-col min-h-full p-6 scroll-container">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -877,7 +879,7 @@
    </div>
   </div>
 
-  <!-- VAR Overlay (unchanged) -->
+  <!-- VAR Overlay -->
   <div id="var-overlay" class="celebration-overlay">
    <div class="celebration-content">
     <div class="var-overlay rounded-2xl overflow-hidden mb-4" style="width: 300px; height: 200px;">
@@ -893,7 +895,7 @@
    </div>
   </div>
 
-  <!-- Celebration Overlay (unchanged) -->
+  <!-- Goal Celebration Overlay -->
   <div id="celebration-overlay" class="celebration-overlay">
    <div class="celebration-content">
     <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
@@ -948,7 +950,7 @@
    </div>
   </div>
 
-  <!-- Ad Screen (updated with Monetag) -->
+  <!-- Ad Reward Screen -->
   <div id="ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
     <div class="text-6xl mb-4">
@@ -973,7 +975,7 @@
    </div>
   </div>
 
-  <!-- Withdraw Modal (unchanged) -->
+  <!-- Withdraw Modal -->
   <div id="withdraw-modal" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4" style="transform: scale(1);">
     <div class="text-6xl mb-4">
@@ -1002,53 +1004,135 @@
    </div>
   </div>
 
-  <script>
-    // -------------------- Webhook sender --------------------
-    // REPLACED OLD VERSION WITH SECURE VERSION
-    async function sendToBot(eventType, data = {}) {
-      if (!BJS_WEBHOOK) {
-        console.error("No Webhook URL found in parameters!");
-        return;
-      }
-      
-      // Force HTTPS to prevent 'Mixed Content' blocking on GitHub Pages
-      const secureWebhook = BJS_WEBHOOK.replace("http://", "https://");
+    <script>
+    // Global error handler
+    window.onerror = function(msg, url, line) {
+      console.error('Global error:', msg, 'at', url, 'line', line);
+      showInlineMessage('Game error: ' + msg, 'error');
+      return false;
+    };
 
+    // 1. First, declare all variables (The "Definitions" section)
+    const urlParams = new URLSearchParams(window.location.search);
+    const startParam = urlParams.get('data') || urlParams.get('start');
+
+    let BJS_WEBHOOK = null;
+    let TELEGRAM_UID = null;
+    let TELEGRAM_USERNAME = 'Player';
+    let TELEGRAM_FIRST_NAME = 'Player';
+    let IS_JOINED = false;
+    let REFERRAL_CODE = null;
+    let REFERRAL_COUNT = 0;
+
+    // --- MOVE THESE UP FROM THE MIDDLE OF YOUR CODE ---
+    let playerData = null; 
+    let allPlayersData = [];
+    let config = { game_title: 'TON FOOTBALL', welcome_message: 'Play & Earn' };
+    // --------------------------------------------------
+
+    // 2. Now, run the Decoder (The "Logic" section)
+    if (startParam) {
+      try {
+        const decodedStr = atob(decodeURIComponent(startParam));
+        const data = JSON.parse(decodedStr);
+
+        TELEGRAM_UID = data.user_id || data.user?.user_id;
+        TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
+        TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
+        BJS_WEBHOOK = data.webhook;
+        IS_JOINED = (data.joined === 1 || data.joined === "1");
+        REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
+        REFERRAL_COUNT = data.ref_count || 0;
+
+        // Now this will NOT error because playerData was declared above
+        playerData = {
+          telegram_id: TELEGRAM_UID,
+          username: TELEGRAM_USERNAME,
+          total_coins: 0,
+          player_energy: 100,
+          player_level: 1,
+          joined_channel: IS_JOINED
+        };
+      } catch (e) {
+        console.error('Failed to decode:', e);
+      }
+    }
+
+        // --- NEW FIX END ---
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // Ensure IDs are synced even if param fails
+    const tgUser = tg?.initDataUnsafe?.user;
+    TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
+    
+    // Final check: if we have a UID but no playerData yet, make a shell
+    if (TELEGRAM_UID !== 'unknown' && !playerData) {
+        playerData = { telegram_id: TELEGRAM_UID, total_coins: 0, player_energy: 100 };
+    }
+
+    // Refresh display immediately so buttons unlock
+    document.addEventListener('DOMContentLoaded', () => {
+        updateStatsDisplay(); 
+    });
+
+    // -------------------- Webhook sender --------------------
+    async function sendToBot(eventType, data = {}) {
+      if (!BJS_WEBHOOK) return;
       const payload = {
         event: eventType,
-        user_id: tgUserId,
-        username: tgUsername,
+        user_id: TELEGRAM_UID,
+        username: TELEGRAM_USERNAME,
+        first_name: TELEGRAM_FIRST_NAME,
         ...data,
         timestamp: Date.now()
       };
-
       try {
-        const response = await fetch(secureWebhook, {
+        const response = await fetch(BJS_WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        
         if (response.ok) {
-          console.log("Sent to BJs successfully");
+          return await response.json();
         }
       } catch (e) {
-        console.warn('Webhook send failed. Check if BJs URL allows CORS.', e);
+        console.warn('Webhook send failed', e);
       }
+      return null;
     }
 
     // -------------------- Force join channel check --------------------
-    let joinedChannel = JOINED_PARAM === '1';
-    if (!joinedChannel) {
-      document.getElementById('join-channel-banner').classList.remove('hidden');
-    }
+    let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
+    
+    // UI sync for join banner
+    document.addEventListener('DOMContentLoaded', () => {
+      const banner = document.getElementById('join-channel-banner');
+      if (banner) {
+        if (!joinedChannel) {
+          banner.classList.remove('hidden');
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+    });
 
     async function verifyChannelJoin() {
-      // This will now use the secure version above
-      sendToBot('verify_channel', {});
-      showInlineMessage('Verification requested. Please wait and then click Play again.', 'info');
+      showInlineMessage('Verifying...', 'info');
+      const response = await sendToBot('verify_channel', {});
+      if (response && response.joined === true) {
+        joinedChannel = true;
+        localStorage.setItem('joinedChannel', 'true');
+        document.getElementById('join-channel-banner').classList.add('hidden');
+        showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
+        updateStatsDisplay(); // Refresh play button
+      } else {
+        showInlineMessage('❌ Not a member yet. Please join the channel first.', 'error');
+      }
     }
-
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
@@ -1063,17 +1147,6 @@
     const ENERGY_BOOST_COST = 0.0010;
     const LEVEL_UP_BASE_COST = 0.0015;
     const SUPER_PLAYER_COST = 0.0050;
-
-    // AI team names
-    const aiTeamNames = [
-      { name: 'CHE', color: 'from-blue-600 to-blue-800' }, // Chelsea
-      { name: 'MUN', color: 'from-red-600 to-red-800' }, // Man Utd
-      { name: 'ARS', color: 'from-red-500 to-red-700' }, // Arsenal
-      { name: 'LIV', color: 'from-red-500 to-orange-600' }, // Liverpool
-      { name: 'MCI', color: 'from-sky-400 to-sky-600' }, // Man City
-      { name: 'TOT', color: 'from-gray-400 to-gray-600' }, // Tottenham
-      { name: 'NEW', color: 'from-black to-gray-800' } // Newcastle
-    ];
 
     const defaultConfig = {
       game_title: 'TON FOOTBALL',
@@ -1145,14 +1218,12 @@
             }
 
             // If we have Telegram user, ensure playerData matches
-            if (tgUserId && (!playerData || playerData.telegram_id !== tgUserId)) {
-              // Try to find by telegram_id
-              const existing = data.find(p => p.telegram_id === tgUserId);
+            if (TELEGRAM_UID && (!playerData || playerData.telegram_id !== TELEGRAM_UID)) {
+              const existing = data.find(p => p.telegram_id === TELEGRAM_UID);
               if (existing) {
                 playerData = existing;
                 localStorage.setItem('playerId', playerData.id);
               } else {
-                // Create new player with Telegram info
                 createNewTelegramPlayer();
               }
             }
@@ -1160,7 +1231,12 @@
             updateStatsDisplay();
             updateLeaderboard();
             updateReferralDisplay();
-            updateTopScorers();
+
+            // Handle referral param
+            if (REFERRAL_CODE && playerData && !playerData.referred_by) {
+              document.getElementById('referral-code-input').value = REFERRAL_CODE;
+              showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
+            }
           }
         };
 
@@ -1172,11 +1248,12 @@
     }
 
     async function createNewTelegramPlayer() {
+      // Use Telegram UID as part of ID for consistency
       const newPlayer = {
-        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        username: tgUsername,
-        first_name: tgFirstName,
-        telegram_id: tgUserId,
+        id: 'player_' + TELEGRAM_UID + '_' + Math.random().toString(36).substr(2, 4),
+        username: TELEGRAM_USERNAME,
+        first_name: TELEGRAM_FIRST_NAME,
+        telegram_id: TELEGRAM_UID,
         wallet_address: '',
         total_coins: 0,
         goals_scored: 0,
@@ -1201,18 +1278,7 @@
       const result = await window.dataSdk.create(newPlayer);
       if (result.isOk) {
         localStorage.setItem('playerId', newPlayer.id);
-        // Send creation event to bot
         sendToBot('player_created', { player: newPlayer });
-      }
-
-      // Handle referral param if present
-      if (REFERRAL_CODE_PARAM && REFERRAL_CODE_PARAM.startsWith('ref_')) {
-        const code = REFERRAL_CODE_PARAM.replace('ref_', '');
-        setTimeout(() => {
-          showScreen('referral-screen');
-          document.getElementById('referral-code-input').value = code;
-          showInlineMessage('🎁 Enter the referral code to get bonus!', 'success');
-        }, 1000);
       }
     }
 
@@ -1301,8 +1367,7 @@
       document.getElementById('referral-count').textContent = referralCount;
       document.getElementById('referral-earnings').textContent = referralEarnings;
 
-      // Telegram deep link
-      const botUsername = 'Goal2Ton_bot'; // replace with your bot username
+      const botUsername = 'Goal2Ton_bot';
       const referralLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
       document.getElementById('referral-link-input').value = referralLink;
 
@@ -1360,38 +1425,27 @@
       }
     }
 
-    function updateTopScorers() {
-      const topScorers = [...allPlayersData].sort((a, b) => (b.goals_scored || 0) - (a.goals_scored || 0)).slice(0, 5);
-      const list = document.getElementById('top-scorers-list');
-      list.innerHTML = topScorers.map((p, i) => `
-        <div class="flex justify-between items-center text-sm">
-          <span>${i+1}. ${p.username || 'Player'}</span>
-          <span class="text-yellow-400 font-bold">${p.goals_scored || 0} ⚽</span>
-        </div>
-      `).join('');
-    }
-
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
 
       if (screenId === 'leaderboard-screen') {
         updateLeaderboard();
-        updateTopScorers();
       } else if (screenId === 'referral-screen') {
         updateReferralDisplay();
       }
     }
 
-    // -------------------- Game Functions (unchanged core, but added webhook & team name) --------------------
+    // -------------------- Game Functions --------------------
     async function checkAndStartGame() {
-      if (!joinedChannel) {
-        showInlineMessage('Please join our Telegram channel first!', 'warning');
+      if (!playerData) {
+        showInlineMessage('Loading player data... Please wait.', 'info');
         return;
       }
 
-      if (!playerData) {
-        // Should have been created by now
+      if (!joinedChannel) {
+        showInlineMessage('Please join our Telegram channel first!', 'warning');
+        document.getElementById('join-channel-banner').classList.remove('hidden');
         return;
       }
 
@@ -1404,48 +1458,50 @@
     }
 
     function startGame() {
-      gameState = {
-        isPlaying: true,
-        userScore: 0,
-        aiScore: 0,
-        timeRemaining: MATCH_DURATION,
-        coinsEarned: 0,
-        goalsThisMatch: 0,
-        selectedPlayer: null,
-        ballPossession: 'user',
-        energy: gameState.energy - ENERGY_COST_PER_MATCH,
-        maxEnergy: gameState.maxEnergy
-      };
+      try {
+        gameState = {
+          isPlaying: true,
+          userScore: 0,
+          aiScore: 0,
+          timeRemaining: MATCH_DURATION,
+          coinsEarned: 0,
+          goalsThisMatch: 0,
+          selectedPlayer: null,
+          ballPossession: 'user',
+          energy: gameState.energy - ENERGY_COST_PER_MATCH,
+          maxEnergy: gameState.maxEnergy
+        };
 
-      // Randomize AI team
-      const randomTeam = aiTeamNames[Math.floor(Math.random() * aiTeamNames.length)];
-      document.getElementById('ai-team-badge').textContent = randomTeam.name;
-      document.getElementById('ai-team-badge').className = `w-10 h-10 rounded-full bg-gradient-to-br ${randomTeam.color} flex items-center justify-center font-bold text-xs`;
+        // Randomize user team color
+        const userHue = Math.floor(Math.random() * 360);
+        setTimeout(() => {
+          document.querySelectorAll('.player.user').forEach(el => {
+            el.style.background = `linear-gradient(135deg, hsl(${userHue}, 100%, 50%), hsl(${userHue}, 100%, 30%))`;
+          });
+        }, 100);
 
-      // Randomize user team color
-      const userHue = Math.floor(Math.random() * 360);
-      document.querySelectorAll('.player.user').forEach(el => {
-        el.style.background = `linear-gradient(135deg, hsl(${userHue}, 100%, 50%), hsl(${userHue}, 100%, 30%))`;
-      });
+        showScreen('game-screen');
+        initializePlayers();
+        resetBall();
+        updateGameHUD();
 
-      showScreen('game-screen');
-      initializePlayers();
-      resetBall();
-      updateGameHUD();
+        lastTime = performance.now();
+        animationFrameId = requestAnimationFrame(gameLoop);
 
-      lastTime = performance.now();
-      animationFrameId = requestAnimationFrame(gameLoop);
+        gameTimerInterval = setInterval(() => {
+          if (gameState.isPlaying && gameState.timeRemaining > 0) {
+            gameState.timeRemaining -= 1;
+            updateGameHUD();
 
-      gameTimerInterval = setInterval(() => {
-        if (gameState.isPlaying && gameState.timeRemaining > 0) {
-          gameState.timeRemaining -= 1;
-          updateGameHUD();
-
-          if (gameState.timeRemaining <= 0) {
-            endGame();
+            if (gameState.timeRemaining <= 0) {
+              endGame();
+            }
           }
-        }
-      }, 1000);
+        }, 1000);
+      } catch (error) {
+        console.error('Error starting game:', error);
+        showInlineMessage('Error starting game. Please refresh.', 'error');
+      }
     }
 
     function initializePlayers() {
@@ -1760,7 +1816,6 @@
           gameState.goalsThisMatch++;
           gameState.coinsEarned += GOAL_REWARD;
 
-          // Send goal event to bot
           sendToBot('goal_scored', {
             match_id: Date.now(),
             goal_number: gameState.goalsThisMatch,
@@ -1942,7 +1997,6 @@
 
       await saveStats(result);
 
-      // Send match end to bot
       sendToBot('match_end', {
         result,
         user_score: gameState.userScore,
@@ -1974,19 +2028,15 @@
       }
     }
 
-    // -------------------- Ad Reward (Monetag integration) --------------------
+    // -------------------- Ad Reward (Monetag) --------------------
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
-      // Show ad screen with timer
       document.getElementById('ad-screen').classList.add('active');
 
-      // Use Monetag rewarded ad
       if (typeof show_10656450 === 'function') {
         show_10656450('pop').then(() => {
-          // User watched ad successfully
           completeAdReward();
         }).catch(e => {
-          // Ad failed or was closed early
           document.getElementById('ad-screen').classList.remove('active');
           showInlineMessage('Ad not completed. Try again.', 'warning');
         });
@@ -2032,9 +2082,13 @@
       }
     }
 
-    // -------------------- Upgrade Functions (unchanged, but add webhook) --------------------
+
+    // -------------------- Upgrade Functions --------------------
     async function upgradeEnergy() {
-      if (!playerData) return;
+      if (!playerData) {
+        showInlineMessage('Player data not loaded', 'error');
+        return;
+      }
 
       if (playerData.total_coins < ENERGY_BOOST_COST) {
         showInlineMessage('Not enough TON!', 'error');
@@ -2059,11 +2113,16 @@
         document.getElementById('btn-upgrade-energy').textContent = 'Upgraded ✅';
         document.getElementById('btn-upgrade-energy').disabled = true;
         sendToBot('upgrade', { type: 'energy' });
+        playerData = updatedData;
+        updateStatsDisplay();
       }
     }
 
     async function upgradeLevel() {
-      if (!playerData) return;
+      if (!playerData) {
+        showInlineMessage('Player data not loaded', 'error');
+        return;
+      }
 
       const level = playerData.player_level || 1;
       const cost = LEVEL_UP_BASE_COST * level;
@@ -2083,11 +2142,16 @@
       if (result.isOk) {
         showInlineMessage(`🎯 Player upgraded to Level ${level + 1}!`, 'success');
         sendToBot('upgrade', { type: 'skill', new_level: level + 1 });
+        playerData = updatedData;
+        updateStatsDisplay();
       }
     }
 
     async function unlockSuperPlayer() {
-      if (!playerData) return;
+      if (!playerData) {
+        showInlineMessage('Player data not loaded', 'error');
+        return;
+      }
 
       if (playerData.super_player_unlocked) {
         showInlineMessage('Already unlocked!', 'warning');
@@ -2110,10 +2174,12 @@
         showInlineMessage('⭐ Super Player unlocked!', 'success');
         document.getElementById('super-locked').classList.remove('hidden');
         sendToBot('upgrade', { type: 'super_player' });
+        playerData = updatedData;
+        updateStatsDisplay();
       }
     }
 
-    // -------------------- Wallet & Withdraw (add webhook) --------------------
+    // -------------------- Wallet & Withdraw --------------------
     async function saveWalletAddress() {
       if (!playerData) return;
 
@@ -2136,6 +2202,7 @@
         document.getElementById('btn-withdraw').disabled = false;
         showInlineMessage('Wallet address saved!', 'success');
         sendToBot('wallet_saved', { address });
+        playerData = updatedData;
       }
     }
 
@@ -2194,7 +2261,6 @@
         msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
         msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours.`;
 
-        // Send withdrawal request to bot
         sendToBot('withdraw_request', {
           amount,
           address: playerData.wallet_address,
@@ -2211,7 +2277,7 @@
       }
     }
 
-    // -------------------- Referral Functions (add webhook) --------------------
+    // -------------------- Referral Functions --------------------
     function copyReferralCode() {
       const code = playerData?.referral_code || '';
       if (!code || code === 'LOADING...') return;
@@ -2286,13 +2352,14 @@
       if (result1.isOk && result2.isOk) {
         showInlineMessage(`✅ Code applied! +${bonusEnergy} Energy bonus!`, 'success');
         document.getElementById('referral-code-input').value = '';
-        // Send referral event to bot
         sendToBot('referral_used', {
           referrer_code: inputCode,
           referrer_id: referrer.id,
           bonus_energy: bonusEnergy,
           reward: REFERRAL_REWARD
         });
+        playerData = updatedPlayer;
+        updateStatsDisplay();
       } else {
         showInlineMessage('❌ Failed to apply code', 'error');
       }
@@ -2315,7 +2382,7 @@
       setTimeout(() => tempMsg.remove(), 3000);
     }
 
-    // -------------------- Controls (unchanged) --------------------
+    // -------------------- Controls --------------------
     function initControls() {
       const joystick = document.getElementById('joystick');
       const knob = document.getElementById('joystick-knob');
@@ -2504,13 +2571,6 @@
     initSDK();
     initControls();
     updateUI();
-
-    // If there's a referral param, show message
-    if (REFERRAL_CODE_PARAM && REFERRAL_CODE_PARAM.startsWith('ref_')) {
-      setTimeout(() => {
-        showInlineMessage('Referral code detected! Go to Invite Friends to claim bonus.', 'info');
-      }, 2000);
-    }
   </script>
  </body>
 </html>
