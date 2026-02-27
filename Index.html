@@ -1004,100 +1004,99 @@
    </div>
   </div>
 <script>
-// Global error handler
-window.onerror = function(msg, url, line) {
-  console.error('Global error:', msg, 'at', url, 'line', line);
-  // Suppress common harmless mobile errors
-  if (msg.includes("Can't find variable: Telegram") || msg.includes("Telegram is not defined")) return;
-  showInlineMessage('Game error: ' + msg, 'error');
-  return false;
-};
+// 1. Hardened Decoder (From your Spin & Win)
+function tryParseJSONorB64(input) {
+  if (input === undefined || input === null) return null;
+  if (typeof input === 'object') return input;
+  let s = String(input).trim();
 
-// 1. Declare Global Variables using 'var' to avoid Initialization errors
-var playerData = null; 
-var allPlayersData = [];
-var config = { game_title: 'TON FOOTBALL', welcome_message: 'Play & Earn' };
+  // Direct JSON
+  if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
+    try { return JSON.parse(s); } catch(e){}
+  }
 
+  // URL-decoded JSON
+  try {
+    const dec = decodeURIComponent(s);
+    if ((dec.startsWith('{') && dec.endsWith('}')) || (dec.startsWith('[') && dec.endsWith(']'))) {
+      return JSON.parse(dec);
+    }
+  } catch(e){}
+
+  // Base64 (URL-safe & Standard)
+  try {
+    let b = s.replace(/-/g,'+').replace(/_/g,'/');
+    // Add padding if missing
+    b = b + '='.repeat((4 - (b.length % 4)) % 4);
+    let raw = atob(b);
+    try { raw = decodeURIComponent(escape(raw)); } catch(e){}
+    
+    if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+      return JSON.parse(raw);
+    }
+  } catch(e){}
+
+  return null;
+}
+
+// 2. Global State
+var playerData = null;
 var BJS_WEBHOOK = null;
 var TELEGRAM_UID = null;
 var TELEGRAM_USERNAME = 'Player';
 var TELEGRAM_FIRST_NAME = 'Player';
 var IS_JOINED = false;
 var REFERRAL_CODE = null;
-var REFERRAL_COUNT = 0;
 
-// 2. Extract URL Params
-const urlParams = new URLSearchParams(window.location.search);
-const startParam = urlParams.get('data') || urlParams.get('start');
+// 3. Initialize on Load
+async function initializeApp() {
+  const qs = new URLSearchParams(location.search);
+  // Check all common keys
+  const rawData = qs.get('data') || qs.get('start') || qs.get('payload');
+  
+  const parsed = tryParseJSONorB64(rawData);
+  
+  if (parsed) {
+    console.log('Successfully Decoded Data:', parsed);
+    TELEGRAM_UID = parsed.user_id || (parsed.user && parsed.user.user_id);
+    TELEGRAM_USERNAME = parsed.username || (parsed.user && parsed.user.username) || 'Player';
+    TELEGRAM_FIRST_NAME = parsed.first_name || (parsed.user && parsed.user.first_name) || 'Player';
+    BJS_WEBHOOK = parsed.webhook || parsed.callback_url;
+    IS_JOINED = (parsed.joined === 1 || parsed.joined === "1" || parsed.joined === true);
+    REFERRAL_CODE = (parsed.ref && parsed.ref !== 'none') ? parsed.ref : null;
 
-// 3. Decode Logic
-if (startParam) {
-  try {
-    const decodedStr = atob(decodeURIComponent(startParam));
-    const data = JSON.parse(decodedStr);
-    console.log('Decoded start data:', data);
-
-    TELEGRAM_UID = data.user_id || data.user?.user_id;
-    TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
-    TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
-    BJS_WEBHOOK = data.webhook;
-    IS_JOINED = (data.joined === 1 || data.joined === "1");
-    REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
-    REFERRAL_COUNT = data.ref_count || 0;
-
-    // Create immediate player object
+    // Set immediate session data so "Loading" screen disappears
     playerData = {
       telegram_id: TELEGRAM_UID,
       username: TELEGRAM_USERNAME,
-      first_name: TELEGRAM_FIRST_NAME,
       total_coins: 0,
       player_energy: 100,
       player_level: 1,
       joined_channel: IS_JOINED
     };
-  } catch (e) {
-    console.error('Failed to decode:', e);
   }
-}
 
-// 4. Telegram WebApp Integration
-const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.ready();
-  tg.expand();
-}
-
-const tgUser = tg?.initDataUnsafe?.user;
-TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
-
-// Create shell if decode failed but we have a TG ID
-if (TELEGRAM_UID !== 'unknown' && !playerData) {
-    playerData = { 
-        telegram_id: TELEGRAM_UID, 
-        username: TELEGRAM_USERNAME,
-        total_coins: 0, 
-        player_energy: 100 
-    };
-}
-
-// 5. UI Initialization
-document.addEventListener('DOMContentLoaded', () => {
-    // Only call if function exists in your main game logic
-    if (typeof updateStatsDisplay === "function") {
-        updateStatsDisplay(); 
+  // Fallback to Telegram WebApp Object
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    const tgUser = tg.initDataUnsafe?.user;
+    if (tgUser && !TELEGRAM_UID) {
+      TELEGRAM_UID = tgUser.id;
+      TELEGRAM_USERNAME = tgUser.username || TELEGRAM_USERNAME;
+      TELEGRAM_FIRST_NAME = tgUser.first_name || TELEGRAM_FIRST_NAME;
     }
-    
-    // Sync Banner
-    const banner = document.getElementById('join-channel-banner');
-    if (banner) {
-        let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
-        if (joinedChannel) {
-            banner.classList.add('hidden');
-        } else {
-            banner.classList.remove('hidden');
-        }
-    }
-});
+  }
+
+  // Trigger UI Update
+  if (typeof updateStatsDisplay === "function") updateStatsDisplay();
+  
+  // Start the Database SDK
+  initSDK();
+}
+
+// Start the whole flow
+window.addEventListener('DOMContentLoaded', initializeApp);
 
 // -------------------- Webhook sender --------------------
 async function sendToBot(eventType, data = {}) {
@@ -1106,35 +1105,17 @@ async function sendToBot(eventType, data = {}) {
     event: eventType,
     user_id: TELEGRAM_UID,
     username: TELEGRAM_USERNAME,
-    first_name: TELEGRAM_FIRST_NAME,
-    ...data,
-    timestamp: Date.now()
+    ...data
   };
   try {
-    const response = await fetch(BJS_WEBHOOK, {
+    await fetch(BJS_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (response.ok) return await response.json();
-  } catch (e) {
-    console.warn('Webhook send failed', e);
-  }
-  return null;
+  } catch (e) { console.warn('Webhook failed', e); }
 }
 
-async function verifyChannelJoin() {
-  showInlineMessage('Verifying...', 'info');
-  const response = await sendToBot('verify_channel', {});
-  if (response && response.joined === true) {
-    localStorage.setItem('joinedChannel', 'true');
-    document.getElementById('join-channel-banner').classList.add('hidden');
-    showInlineMessage('✅ Verified!', 'success');
-    if (typeof updateStatsDisplay === "function") updateStatsDisplay();
-  } else {
-    showInlineMessage('❌ Join first!', 'error');
-  }
-}
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
