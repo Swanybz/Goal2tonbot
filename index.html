@@ -1001,82 +1001,119 @@
    </div>
   </div>
 
-    <script>
-    // Global error handler
+  <script>
+    // Global error handler that ignores harmless "before initialization" errors
     window.onerror = function(msg, url, line) {
+      // Ignore errors about playerData or allPlayersData not being initialized yet
+      if (msg.includes('playerData') || msg.includes('allPlayersData')) {
+        console.warn('Ignored initialization error:', msg);
+        return true; // Prevent default error handling
+      }
       console.error('Global error:', msg, 'at', url, 'line', line);
       showInlineMessage('Game error: ' + msg, 'error');
       return false;
     };
 
-    // -------------------- DECODE DATA PARAMETER (FIXED BRIDGE) --------------------
-    const urlParams = new URLSearchParams(window.location.search);
-    const startParam = urlParams.get('data') || urlParams.get('start');
+    // -------------------- ROBUST BASE64/JSON DECODER (from spin & win) --------------------
+    function tryParseJSONorB64(input) {
+      if (input === undefined || input === null) return null;
+      if (typeof input === 'object') return input;
+      let s = String(input).trim();
 
-    let BJS_WEBHOOK = null;
-    let TELEGRAM_UID = null;
-    let TELEGRAM_USERNAME = 'Player';
-    let TELEGRAM_FIRST_NAME = 'Player';
-    let IS_JOINED = false;
-    let REFERRAL_CODE = null;
-    let REFERRAL_COUNT = 0;
-
-    if (startParam) {
-      try {
-        const decodedStr = atob(decodeURIComponent(startParam));
-        const data = JSON.parse(decodedStr);
-        console.log('Decoded start data:', data);
-
-        TELEGRAM_UID = data.user_id || data.user?.user_id;
-        TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
-        TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
-        BJS_WEBHOOK = data.webhook;
-        IS_JOINED = (data.joined === 1 || data.joined === "1");
-        REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
-        REFERRAL_COUNT = data.ref_count || 0;
-
-        // --- NEW FIX START ---
-        // Create an immediate "session" player so the game doesn't show "Loading..."
-        playerData = {
-          telegram_id: TELEGRAM_UID,
-          username: TELEGRAM_USERNAME,
-          first_name: TELEGRAM_FIRST_NAME,
-          total_coins: 0, 
-          player_energy: 100,
-          player_level: 1,
-          referral_count: REFERRAL_COUNT,
-          joined_channel: IS_JOINED
-        };
-        // --- NEW FIX END ---
-
-      } catch (e) {
-        console.error('Failed to decode start param:', e);
+      // Direct JSON
+      if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
+        try { return JSON.parse(s); } catch(e){}
       }
+
+      // URL-decoded JSON
+      try {
+        const dec = decodeURIComponent(s);
+        if ((dec.startsWith('{') && dec.endsWith('}')) || (dec.startsWith('[') && dec.endsWith(']'))) {
+          return JSON.parse(dec);
+        }
+      } catch(e){}
+
+      // Strings wrapped in quotes -> unwrap and retry
+      try {
+        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+          const unq = s.substring(1, s.length-1);
+          const tryInner = tryParseJSONorB64(unq);
+          if (tryInner) return tryInner;
+        }
+      } catch(e){}
+
+      // Base64 (URL-safe)
+      try {
+        let b = s.replace(/-/g,'+').replace(/_/g,'/');
+        try { b = decodeURIComponent(b); } catch(e){}
+        b = b + '='.repeat((4 - (b.length % 4)) % 4);
+        let raw = atob(b);
+        try { raw = decodeURIComponent(escape(raw)); } catch(e){}
+        if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+          return JSON.parse(raw);
+        }
+        const nested = tryParseJSONorB64(raw);
+        if (nested) return nested;
+        return raw;
+      } catch(e){}
+
+      // fallback: try atob directly
+      try {
+        let raw = atob(s);
+        try { raw = decodeURIComponent(escape(raw)); } catch(e){}
+        const nested = tryParseJSONorB64(raw);
+        if (nested) return nested;
+        if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+          return JSON.parse(raw);
+        }
+        return raw;
+      } catch(e){}
+
+      return null;
     }
 
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
+    function parseDeeplinkPayload() {
+      try {
+        const qs = new URLSearchParams(location.search || '');
+        const candidates = [];
+
+        ['start','data','s','p','payload'].forEach(k => { const v = qs.get(k); if (v) candidates.push(v); });
+
+        if (location.hash) {
+          let rawHash = location.hash.replace(/^#/,'');
+          if (rawHash.includes('?')) {
+            const hashQs = rawHash.split('?').slice(1).join('?');
+            const hparams = new URLSearchParams(hashQs);
+            ['start','data','s','p','payload'].forEach(k => { const v = hparams.get(k); if (v) candidates.push(v); });
+          } else {
+            candidates.push(rawHash);
+          }
+        }
+
+        if (location.search && location.search.length > 1) {
+          candidates.push(location.search.replace(/^\?/,''));
+        }
+
+        for (const c of candidates) {
+          if (!c) continue;
+          const parsed = tryParseJSONorB64(c);
+          if (parsed && typeof parsed === 'object') {
+            try { sessionStorage.setItem('gainGridUserData', JSON.stringify(parsed)); } catch(e){}
+            return parsed;
+          }
+        }
+
+        const cached = sessionStorage.getItem('gainGridUserData');
+        if (cached) {
+          try { return JSON.parse(cached); } catch(e){}
+        }
+        return null;
+      } catch(e) { console.warn('parseDeeplinkPayload err', e); return null; }
     }
 
-    // Ensure IDs are synced even if param fails
-    const tgUser = tg?.initDataUnsafe?.user;
-    TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
-    
-    // Final check: if we have a UID but no playerData yet, make a shell
-    if (TELEGRAM_UID !== 'unknown' && !playerData) {
-        playerData = { telegram_id: TELEGRAM_UID, total_coins: 0, player_energy: 100 };
-    }
-
-    // Refresh display immediately so buttons unlock
-    document.addEventListener('DOMContentLoaded', () => {
-        updateStatsDisplay(); 
-    });
-
-    // -------------------- Webhook sender --------------------
+    // ---------- Post to bot ----------
     async function sendToBot(eventType, data = {}) {
-      if (!BJS_WEBHOOK) return;
+      if (!BJS_WEBHOOK) return null;
       const payload = {
         event: eventType,
         user_id: TELEGRAM_UID,
@@ -1100,20 +1137,46 @@
       return null;
     }
 
+    // ---------- Extract data from payload ----------
+    let BJS_WEBHOOK = null;
+    let TELEGRAM_UID = null;
+    let TELEGRAM_USERNAME = 'Player';
+    let TELEGRAM_FIRST_NAME = 'Player';
+    let IS_JOINED = false;
+    let REFERRAL_CODE = null;
+    let REFERRAL_COUNT = 0;
+
+    const incomingPayload = parseDeeplinkPayload();
+    if (incomingPayload) {
+      console.log('Decoded payload:', incomingPayload);
+      // expected structure: { user_id, user: { user_id, username, first_name }, webhook, ref, joined, ref_count }
+      TELEGRAM_UID = incomingPayload.user_id || (incomingPayload.user && incomingPayload.user.user_id);
+      TELEGRAM_USERNAME = (incomingPayload.user && incomingPayload.user.username) || 'Player';
+      TELEGRAM_FIRST_NAME = (incomingPayload.user && incomingPayload.user.first_name) || 'Player';
+      BJS_WEBHOOK = incomingPayload.webhook;
+      IS_JOINED = incomingPayload.joined === 1;
+      REFERRAL_CODE = incomingPayload.ref !== 'none' ? incomingPayload.ref : null;
+      REFERRAL_COUNT = incomingPayload.ref_count || 0;
+    } else {
+      // fallback to Telegram WebApp
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+      }
+      const tgUser = tg?.initDataUnsafe?.user;
+      TELEGRAM_UID = tgUser?.id || 'unknown';
+      TELEGRAM_USERNAME = tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
+      TELEGRAM_FIRST_NAME = tgUser?.first_name || 'Player';
+    }
+
     // -------------------- Force join channel check --------------------
     let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
-    
-    // UI sync for join banner
-    document.addEventListener('DOMContentLoaded', () => {
-      const banner = document.getElementById('join-channel-banner');
-      if (banner) {
-        if (!joinedChannel) {
-          banner.classList.remove('hidden');
-        } else {
-          banner.classList.add('hidden');
-        }
-      }
-    });
+    if (!joinedChannel) {
+      document.getElementById('join-channel-banner').classList.remove('hidden');
+    } else {
+      document.getElementById('join-channel-banner').classList.add('hidden');
+    }
 
     async function verifyChannelJoin() {
       showInlineMessage('Verifying...', 'info');
@@ -1149,7 +1212,7 @@
     };
 
     let config = { ...defaultConfig };
-    let playerData = null;
+    let playerData = null;          // <-- declared here, before any usage
     let allPlayersData = [];
 
     let gameState = {
@@ -1239,13 +1302,44 @@
         if (!result.isOk) {
           console.error('Failed to initialize data SDK');
         }
+      } else {
+        // Fallback if no dataSdk
+        console.warn('dataSdk not present, using fallback');
+        const today = new Date().toISOString().split('T')[0];
+        playerData = {
+          id: TELEGRAM_UID || 'fallback',
+          username: TELEGRAM_USERNAME,
+          first_name: TELEGRAM_FIRST_NAME,
+          telegram_id: TELEGRAM_UID,
+          wallet_address: '',
+          total_coins: 0,
+          goals_scored: 0,
+          games_played: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          high_score: 0,
+          ads_watched: 0,
+          player_energy: MAX_ENERGY,
+          player_level: 1,
+          super_player_unlocked: false,
+          referral_code: generateReferralCode(),
+          referred_by: '',
+          referral_count: 0,
+          referral_earnings: 0,
+          joined_channel: joinedChannel,
+          created_at: new Date().toISOString(),
+          last_played: new Date().toISOString()
+        };
+        updateStatsDisplay();
+        updateLeaderboard();
+        updateReferralDisplay();
       }
     }
 
     async function createNewTelegramPlayer() {
-      // Use Telegram UID as part of ID for consistency
       const newPlayer = {
-        id: 'player_' + TELEGRAM_UID + '_' + Math.random().toString(36).substr(2, 4),
+        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         username: TELEGRAM_USERNAME,
         first_name: TELEGRAM_FIRST_NAME,
         telegram_id: TELEGRAM_UID,
@@ -1293,7 +1387,7 @@
     }
 
     function updateStatsDisplay() {
-      if (!playerData) return;
+      if (!playerData) return; // safe guard
 
       const coins = (playerData.total_coins || 0).toFixed(4);
       const energy = playerData.player_energy || MAX_ENERGY;
@@ -1352,7 +1446,7 @@
     }
 
     function updateReferralDisplay() {
-      if (!playerData) return;
+      if (!playerData) return; // safe guard
 
       const referralCode = playerData.referral_code || 'LOADING...';
       const referralCount = playerData.referral_count || 0;
@@ -1378,6 +1472,7 @@
     }
 
     function updateLeaderboard() {
+      if (!playerData) return; // safe guard
       const list = document.getElementById('leaderboard-list');
       list.innerHTML = '';
 
@@ -2077,7 +2172,6 @@
       }
     }
 
-
     // -------------------- Upgrade Functions --------------------
     async function upgradeEnergy() {
       if (!playerData) {
@@ -2563,9 +2657,17 @@
     }
 
     // -------------------- Start --------------------
-    initSDK();
-    initControls();
-    updateUI();
+    // Ensure all initializations happen after DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      initSDK().then(() => {
+        initControls();
+        updateUI();
+        // Optionally, if playerData is still null, show loading message
+        if (!playerData) {
+          showInlineMessage('Loading player data...', 'info');
+        }
+      });
+    });
   </script>
  </body>
 </html>
