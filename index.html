@@ -1000,26 +1000,40 @@
    </div>
   </div>
 
-  <script>
+ <script>
     // Global error handler
     window.onerror = function(msg, url, line) {
       console.error('Global error:', msg, 'at', url, 'line', line);
       return false;
     };
 
-    // 1. -------------------- Nexus Data Mapping --------------------
+    // 1. -------------------- Nexus Data Decoding & Mapping --------------------
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Priority 1: URL Parameters (Modern Pattern)
-    const BJS_WEBHOOK = urlParams.get('webhook');
-    const BOT_ID = urlParams.get('botid');
-    const JOINED_PARAM = urlParams.get('joined'); 
-    const REFERRAL_CODE_PARAM = urlParams.get('ref') || 'none';
-    const TELEGRAM_UID = urlParams.get('uid');
-    const TELEGRAM_USERNAME = urlParams.get('user');
-    const TELEGRAM_FIRST_NAME = urlParams.get('name');
+    // --- NEW: Base64 Decoding Logic ---
+    let decodedData = {};
+    const encodedParam = urlParams.get('data');
+    if (encodedParam) {
+        try {
+            // Decodes the Base64 string sent from the Bot
+            const jsonString = atob(decodeURIComponent(encodedParam));
+            decodedData = JSON.parse(jsonString);
+        } catch (e) {
+            console.error('Nexus Decode Error:', e);
+        }
+    }
 
-    // Priority 2: Telegram WebApp Fallback
+    // Priority 1: Decoded Data (From Base64)
+    // Priority 2: URL Parameters (Legacy Fallback)
+    const BJS_WEBHOOK = decodedData.webhook || urlParams.get('webhook');
+    const BOT_ID = decodedData.botid || urlParams.get('botid');
+    const JOINED_PARAM = decodedData.joined || urlParams.get('joined'); 
+    const REFERRAL_CODE_PARAM = decodedData.ref || urlParams.get('ref') || 'none';
+    const TELEGRAM_UID = decodedData.user_id || urlParams.get('uid');
+    const TELEGRAM_USERNAME = decodedData.username || urlParams.get('user');
+    const TELEGRAM_FIRST_NAME = decodedData.first_name || urlParams.get('name');
+
+    // Priority 3: Telegram WebApp Fallback
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
@@ -1037,7 +1051,7 @@
     window.addEventListener('load', () => {
         // If we have a User ID, hide the "No Data" error and show the game
         if (finalUserId !== 'unknown') {
-            const loadingScreen = document.getElementById('loading-screen'); // Change to your actual ID
+            const loadingScreen = document.getElementById('loading-screen'); 
             if (loadingScreen) loadingScreen.classList.add('hidden');
             
             // Map data to UI elements
@@ -1067,12 +1081,14 @@
       try {
         const response = await fetch(secureWebhook, {
           method: 'POST',
+          // Note: fetch to BJs webhooks usually works best with 'no-cors' if you don't need a JSON response back
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         
+        // Return success if status is OK
         if (response.ok) {
-          return await response.json();
+          try { return await response.json(); } catch(e) { return { success: true }; }
         }
       } catch (e) {
         console.warn('Nexus Sync Failed', e);
@@ -1086,7 +1102,11 @@
     // Initial banner state
     const banner = document.getElementById('join-channel-banner');
     if (banner) {
-        joinedChannel ? banner.classList.add('hidden') : banner.classList.remove('hidden');
+        if (joinedChannel) {
+            banner.classList.add('hidden');
+        } else {
+            banner.classList.remove('hidden');
+        }
     }
 
     async function verifyChannelJoin() {
@@ -1096,7 +1116,8 @@
 
       const response = await sendToBot('verify_channel', {});
       
-      if (response && response.joined === true) {
+      // If the bot webhook responds with a success object
+      if (response && (response.joined === true || response.success === true)) {
         joinedChannel = true;
         localStorage.setItem('joinedChannel', 'true');
         if (banner) banner.classList.add('hidden');
@@ -1107,6 +1128,8 @@
         if(btn) btn.innerText = "Verify Join";
       }
     }
+
+
 
 
     // -------------------- Constants --------------------
