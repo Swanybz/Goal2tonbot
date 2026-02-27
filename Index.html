@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://element-sdk.b-cdn.net/data-sdk/v1/data-sdk.js"></script>
   <!-- Monetag Ad SDK -->
   <script src='//libtl.com/sdk.js' data-zone='10656450' data-sdk='show_10656450'></script>
   <script src="/_sdk/element_sdk.js"></script>
@@ -484,8 +483,6 @@
       font-family: 'Orbitron', monospace;
       letter-spacing: 2px;
     }
-    
-    
   </style>
   <style>@view-transition { navigation: auto; }</style>
  </head>
@@ -1003,119 +1000,192 @@
     <div id="withdraw-message" class="mt-4 p-3 rounded-lg hidden"></div>
    </div>
   </div>
-<script>
-// 1. Hardened Decoder (From your Spin & Win)
-function tryParseJSONorB64(input) {
-  if (input === undefined || input === null) return null;
-  if (typeof input === 'object') return input;
-  let s = String(input).trim();
 
-  // Direct JSON
-  if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
-    try { return JSON.parse(s); } catch(e){}
-  }
-
-  // URL-decoded JSON
-  try {
-    const dec = decodeURIComponent(s);
-    if ((dec.startsWith('{') && dec.endsWith('}')) || (dec.startsWith('[') && dec.endsWith(']'))) {
-      return JSON.parse(dec);
-    }
-  } catch(e){}
-
-  // Base64 (URL-safe & Standard)
-  try {
-    let b = s.replace(/-/g,'+').replace(/_/g,'/');
-    // Add padding if missing
-    b = b + '='.repeat((4 - (b.length % 4)) % 4);
-    let raw = atob(b);
-    try { raw = decodeURIComponent(escape(raw)); } catch(e){}
-    
-    if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
-      return JSON.parse(raw);
-    }
-  } catch(e){}
-
-  return null;
-}
-
-// 2. Global State
-var playerData = null;
-var BJS_WEBHOOK = null;
-var TELEGRAM_UID = null;
-var TELEGRAM_USERNAME = 'Player';
-var TELEGRAM_FIRST_NAME = 'Player';
-var IS_JOINED = false;
-var REFERRAL_CODE = null;
-
-// 3. Initialize on Load
-async function initializeApp() {
-  const qs = new URLSearchParams(location.search);
-  // Check all common keys
-  const rawData = qs.get('data') || qs.get('start') || qs.get('payload');
-  
-  const parsed = tryParseJSONorB64(rawData);
-  
-  if (parsed) {
-    console.log('Successfully Decoded Data:', parsed);
-    TELEGRAM_UID = parsed.user_id || (parsed.user && parsed.user.user_id);
-    TELEGRAM_USERNAME = parsed.username || (parsed.user && parsed.user.username) || 'Player';
-    TELEGRAM_FIRST_NAME = parsed.first_name || (parsed.user && parsed.user.first_name) || 'Player';
-    BJS_WEBHOOK = parsed.webhook || parsed.callback_url;
-    IS_JOINED = (parsed.joined === 1 || parsed.joined === "1" || parsed.joined === true);
-    REFERRAL_CODE = (parsed.ref && parsed.ref !== 'none') ? parsed.ref : null;
-
-    // Set immediate session data so "Loading" screen disappears
-    playerData = {
-      telegram_id: TELEGRAM_UID,
-      username: TELEGRAM_USERNAME,
-      total_coins: 0,
-      player_energy: 100,
-      player_level: 1,
-      joined_channel: IS_JOINED
+  <script>
+    // Global error handler
+    window.onerror = function(msg, url, line) {
+      console.error('Global error:', msg, 'at', url, 'line', line);
+      showInlineMessage('Game error: ' + msg, 'error');
+      return false;
     };
-  }
 
-  // Fallback to Telegram WebApp Object
-  const tg = window.Telegram?.WebApp;
-  if (tg) {
-    tg.ready();
-    const tgUser = tg.initDataUnsafe?.user;
-    if (tgUser && !TELEGRAM_UID) {
-      TELEGRAM_UID = tgUser.id;
-      TELEGRAM_USERNAME = tgUser.username || TELEGRAM_USERNAME;
-      TELEGRAM_FIRST_NAME = tgUser.first_name || TELEGRAM_FIRST_NAME;
+    // -------------------- ROBUST BASE64/JSON DECODER (from spin & win) --------------------
+    function tryParseJSONorB64(input) {
+      if (input === undefined || input === null) return null;
+      if (typeof input === 'object') return input;
+      let s = String(input).trim();
+
+      // Direct JSON
+      if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
+        try { return JSON.parse(s); } catch(e){}
+      }
+
+      // URL-decoded JSON
+      try {
+        const dec = decodeURIComponent(s);
+        if ((dec.startsWith('{') && dec.endsWith('}')) || (dec.startsWith('[') && dec.endsWith(']'))) {
+          return JSON.parse(dec);
+        }
+      } catch(e){}
+
+      // Strings wrapped in quotes -> unwrap and retry
+      try {
+        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+          const unq = s.substring(1, s.length-1);
+          const tryInner = tryParseJSONorB64(unq);
+          if (tryInner) return tryInner;
+        }
+      } catch(e){}
+
+      // Base64 (URL-safe)
+      try {
+        let b = s.replace(/-/g,'+').replace(/_/g,'/');
+        try { b = decodeURIComponent(b); } catch(e){}
+        b = b + '='.repeat((4 - (b.length % 4)) % 4);
+        let raw = atob(b);
+        try { raw = decodeURIComponent(escape(raw)); } catch(e){}
+        if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+          return JSON.parse(raw);
+        }
+        const nested = tryParseJSONorB64(raw);
+        if (nested) return nested;
+        return raw;
+      } catch(e){}
+
+      // fallback: try atob directly
+      try {
+        let raw = atob(s);
+        try { raw = decodeURIComponent(escape(raw)); } catch(e){}
+        const nested = tryParseJSONorB64(raw);
+        if (nested) return nested;
+        if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+          return JSON.parse(raw);
+        }
+        return raw;
+      } catch(e){}
+
+      return null;
     }
-  }
 
-  // Trigger UI Update
-  if (typeof updateStatsDisplay === "function") updateStatsDisplay();
-  
-  // Start the Database SDK
-  initSDK();
-}
+    function parseDeeplinkPayload() {
+      try {
+        const qs = new URLSearchParams(location.search || '');
+        const candidates = [];
 
-// Start the whole flow
-window.addEventListener('DOMContentLoaded', initializeApp);
+        ['start','data','s','p','payload'].forEach(k => { const v = qs.get(k); if (v) candidates.push(v); });
 
-// -------------------- Webhook sender --------------------
-async function sendToBot(eventType, data = {}) {
-  if (!BJS_WEBHOOK) return;
-  const payload = {
-    event: eventType,
-    user_id: TELEGRAM_UID,
-    username: TELEGRAM_USERNAME,
-    ...data
-  };
-  try {
-    await fetch(BJS_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch (e) { console.warn('Webhook failed', e); }
-}
+        if (location.hash) {
+          let rawHash = location.hash.replace(/^#/,'');
+          if (rawHash.includes('?')) {
+            const hashQs = rawHash.split('?').slice(1).join('?');
+            const hparams = new URLSearchParams(hashQs);
+            ['start','data','s','p','payload'].forEach(k => { const v = hparams.get(k); if (v) candidates.push(v); });
+          } else {
+            candidates.push(rawHash);
+          }
+        }
 
+        if (location.search && location.search.length > 1) {
+          candidates.push(location.search.replace(/^\?/,''));
+        }
+
+        for (const c of candidates) {
+          if (!c) continue;
+          const parsed = tryParseJSONorB64(c);
+          if (parsed && typeof parsed === 'object') {
+            try { sessionStorage.setItem('gainGridUserData', JSON.stringify(parsed)); } catch(e){}
+            return parsed;
+          }
+        }
+
+        const cached = sessionStorage.getItem('gainGridUserData');
+        if (cached) {
+          try { return JSON.parse(cached); } catch(e){}
+        }
+        return null;
+      } catch(e) { console.warn('parseDeeplinkPayload err', e); return null; }
+    }
+
+    // ---------- Post to bot ----------
+    async function sendToBot(eventType, data = {}) {
+      if (!BJS_WEBHOOK) return null;
+      const payload = {
+        event: eventType,
+        user_id: TELEGRAM_UID,
+        username: TELEGRAM_USERNAME,
+        first_name: TELEGRAM_FIRST_NAME,
+        ...data,
+        timestamp: Date.now()
+      };
+      try {
+        const response = await fetch(BJS_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (e) {
+        console.warn('Webhook send failed', e);
+      }
+      return null;
+    }
+
+    // ---------- Extract data from payload ----------
+    let BJS_WEBHOOK = null;
+    let TELEGRAM_UID = null;
+    let TELEGRAM_USERNAME = 'Player';
+    let TELEGRAM_FIRST_NAME = 'Player';
+    let IS_JOINED = false;
+    let REFERRAL_CODE = null;
+    let REFERRAL_COUNT = 0;
+
+    const incomingPayload = parseDeeplinkPayload();
+    if (incomingPayload) {
+      console.log('Decoded payload:', incomingPayload);
+      // expected structure: { user_id, user: { user_id, username, first_name }, webhook, ref, joined, ref_count }
+      TELEGRAM_UID = incomingPayload.user_id || (incomingPayload.user && incomingPayload.user.user_id);
+      TELEGRAM_USERNAME = (incomingPayload.user && incomingPayload.user.username) || 'Player';
+      TELEGRAM_FIRST_NAME = (incomingPayload.user && incomingPayload.user.first_name) || 'Player';
+      BJS_WEBHOOK = incomingPayload.webhook;
+      IS_JOINED = incomingPayload.joined === 1;
+      REFERRAL_CODE = incomingPayload.ref !== 'none' ? incomingPayload.ref : null;
+      REFERRAL_COUNT = incomingPayload.ref_count || 0;
+    } else {
+      // fallback to Telegram WebApp
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+      }
+      const tgUser = tg?.initDataUnsafe?.user;
+      TELEGRAM_UID = tgUser?.id || 'unknown';
+      TELEGRAM_USERNAME = tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
+      TELEGRAM_FIRST_NAME = tgUser?.first_name || 'Player';
+    }
+
+    // -------------------- Force join channel check --------------------
+    let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
+    if (!joinedChannel) {
+      document.getElementById('join-channel-banner').classList.remove('hidden');
+    } else {
+      document.getElementById('join-channel-banner').classList.add('hidden');
+    }
+
+    async function verifyChannelJoin() {
+      showInlineMessage('Verifying...', 'info');
+      const response = await sendToBot('verify_channel', {});
+      if (response && response.joined === true) {
+        joinedChannel = true;
+        localStorage.setItem('joinedChannel', 'true');
+        document.getElementById('join-channel-banner').classList.add('hidden');
+        showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
+        updateStatsDisplay(); // Refresh play button
+      } else {
+        showInlineMessage('❌ Not a member yet. Please join the channel first.', 'error');
+      }
+    }
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
@@ -1165,53 +1235,60 @@ async function sendToBot(eventType, data = {}) {
 
     // -------------------- Initialize SDK & Data --------------------
     async function initSDK() {
-      // 1. Initialize Element SDK (Title/Config)
       if (window.elementSdk) {
         await window.elementSdk.init({
           defaultConfig,
           onConfigChange: async (newConfig) => {
             config = { ...defaultConfig, ...newConfig };
-            if (typeof updateUI === "function") updateUI();
-          }
+            updateUI();
+          },
+          mapToCapabilities: (cfg) => ({
+            recolorables: [],
+            borderables: [],
+            fontEditable: undefined,
+            fontSizeable: undefined
+          }),
+          mapToEditPanelValues: (cfg) => new Map([
+            ['game_title', cfg.game_title || defaultConfig.game_title],
+            ['welcome_message', cfg.welcome_message || defaultConfig.welcome_message]
+          ])
         });
       }
 
-      // 2. Initialize Data SDK (The Player Database)
       if (window.dataSdk) {
         const dataHandler = {
           onDataChanged(data) {
             allPlayersData = data.sort((a, b) => (b.total_coins || 0) - (a.total_coins || 0));
 
-            // PRIORITY 1: Find player by Telegram ID (Best for multi-device/Bot)
-            if (TELEGRAM_UID && TELEGRAM_UID !== 'unknown') {
-              const existing = data.find(p => String(p.telegram_id) === String(TELEGRAM_UID));
+            const savedId = localStorage.getItem('playerId');
+            if (savedId) {
+              playerData = data.find(p => p.id === savedId) || null;
+            }
+
+            if (!playerData && data.length > 0) {
+              playerData = data[0];
+              localStorage.setItem('playerId', playerData.id);
+            }
+
+            // If we have Telegram user, ensure playerData matches
+            if (TELEGRAM_UID && (!playerData || playerData.telegram_id !== TELEGRAM_UID)) {
+              const existing = data.find(p => p.telegram_id === TELEGRAM_UID);
               if (existing) {
                 playerData = existing;
                 localStorage.setItem('playerId', playerData.id);
               } else {
-                // If not in database, create them immediately
                 createNewTelegramPlayer();
-                return; // Stop here, onDataChanged will fire again after creation
-              }
-            } 
-            // PRIORITY 2: Fallback to LocalStorage (For testing/browsers)
-            else {
-              const savedId = localStorage.getItem('playerId');
-              if (savedId) {
-                playerData = data.find(p => p.id === savedId) || null;
               }
             }
 
-            // Sync UI now that playerData is set
             updateStatsDisplay();
-            if (typeof updateLeaderboard === "function") updateLeaderboard();
-            if (typeof updateReferralDisplay === "function") updateReferralDisplay();
+            updateLeaderboard();
+            updateReferralDisplay();
 
-            // Handle referral logic
+            // Handle referral param
             if (REFERRAL_CODE && playerData && !playerData.referred_by) {
-               const input = document.getElementById('referral-code-input');
-               if (input) input.value = REFERRAL_CODE;
-               showInlineMessage('Referral detected! Claim your bonus.', 'success');
+              document.getElementById('referral-code-input').value = REFERRAL_CODE;
+              showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
             }
           }
         };
@@ -1219,17 +1296,45 @@ async function sendToBot(eventType, data = {}) {
         const result = await window.dataSdk.init(dataHandler);
         if (!result.isOk) {
           console.error('Failed to initialize data SDK');
-          showInlineMessage('Database Connection Error', 'error');
         }
+      } else {
+        // Fallback if no dataSdk
+        console.warn('dataSdk not present, using fallback');
+        const today = new Date().toISOString().split('T')[0];
+        playerData = {
+          id: TELEGRAM_UID || 'fallback',
+          username: TELEGRAM_USERNAME,
+          first_name: TELEGRAM_FIRST_NAME,
+          telegram_id: TELEGRAM_UID,
+          wallet_address: '',
+          total_coins: 0,
+          goals_scored: 0,
+          games_played: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          high_score: 0,
+          ads_watched: 0,
+          player_energy: MAX_ENERGY,
+          player_level: 1,
+          super_player_unlocked: false,
+          referral_code: generateReferralCode(),
+          referred_by: '',
+          referral_count: 0,
+          referral_earnings: 0,
+          joined_channel: joinedChannel,
+          created_at: new Date().toISOString(),
+          last_played: new Date().toISOString()
+        };
+        updateStatsDisplay();
+        updateLeaderboard();
+        updateReferralDisplay();
       }
     }
 
     async function createNewTelegramPlayer() {
-      // Don't create if already exists or ID is missing
-      if (!TELEGRAM_UID || TELEGRAM_UID === 'unknown') return;
-
       const newPlayer = {
-        id: 'p_' + TELEGRAM_UID, // Clean, predictable ID
+        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         username: TELEGRAM_USERNAME,
         first_name: TELEGRAM_FIRST_NAME,
         telegram_id: TELEGRAM_UID,
@@ -1242,31 +1347,24 @@ async function sendToBot(eventType, data = {}) {
         draws: 0,
         high_score: 0,
         ads_watched: 0,
-        player_energy: typeof MAX_ENERGY !== 'undefined' ? MAX_ENERGY : 100,
+        player_energy: MAX_ENERGY,
         player_level: 1,
         super_player_unlocked: false,
         referral_code: generateReferralCode(),
-        referred_by: (REFERRAL_CODE && REFERRAL_CODE !== 'none') ? REFERRAL_CODE : '',
+        referred_by: '',
         referral_count: 0,
         referral_earnings: 0,
-        joined_channel: IS_JOINED, // Use the status from the bot
+        joined_channel: joinedChannel,
         created_at: new Date().toISOString(),
         last_played: new Date().toISOString()
       };
 
-      // Set locally immediately so the UI doesn't flicker/error
-      playerData = newPlayer;
-      updateStatsDisplay();
-
-      // Save to server
       const result = await window.dataSdk.create(newPlayer);
       if (result.isOk) {
         localStorage.setItem('playerId', newPlayer.id);
-        // Tell the bot a new player joined
         sendToBot('player_created', { player: newPlayer });
       }
     }
-
 
     function generateReferralCode() {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2067,7 +2165,6 @@ async function sendToBot(eventType, data = {}) {
         sendToBot('ad_watched', { reward: AD_REWARD, energy_restore: energyRestore });
       }
     }
-
 
     // -------------------- Upgrade Functions --------------------
     async function upgradeEnergy() {
