@@ -1003,136 +1003,138 @@
     <div id="withdraw-message" class="mt-4 p-3 rounded-lg hidden"></div>
    </div>
   </div>
+<script>
+// Global error handler
+window.onerror = function(msg, url, line) {
+  console.error('Global error:', msg, 'at', url, 'line', line);
+  // Suppress common harmless mobile errors
+  if (msg.includes("Can't find variable: Telegram") || msg.includes("Telegram is not defined")) return;
+  showInlineMessage('Game error: ' + msg, 'error');
+  return false;
+};
 
-    <script>
-    // Global error handler
-    window.onerror = function(msg, url, line) {
-      console.error('Global error:', msg, 'at', url, 'line', line);
-      showInlineMessage('Game error: ' + msg, 'error');
-      return false;
+// 1. Declare Global Variables using 'var' to avoid Initialization errors
+var playerData = null; 
+var allPlayersData = [];
+var config = { game_title: 'TON FOOTBALL', welcome_message: 'Play & Earn' };
+
+var BJS_WEBHOOK = null;
+var TELEGRAM_UID = null;
+var TELEGRAM_USERNAME = 'Player';
+var TELEGRAM_FIRST_NAME = 'Player';
+var IS_JOINED = false;
+var REFERRAL_CODE = null;
+var REFERRAL_COUNT = 0;
+
+// 2. Extract URL Params
+const urlParams = new URLSearchParams(window.location.search);
+const startParam = urlParams.get('data') || urlParams.get('start');
+
+// 3. Decode Logic
+if (startParam) {
+  try {
+    const decodedStr = atob(decodeURIComponent(startParam));
+    const data = JSON.parse(decodedStr);
+    console.log('Decoded start data:', data);
+
+    TELEGRAM_UID = data.user_id || data.user?.user_id;
+    TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
+    TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
+    BJS_WEBHOOK = data.webhook;
+    IS_JOINED = (data.joined === 1 || data.joined === "1");
+    REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
+    REFERRAL_COUNT = data.ref_count || 0;
+
+    // Create immediate player object
+    playerData = {
+      telegram_id: TELEGRAM_UID,
+      username: TELEGRAM_USERNAME,
+      first_name: TELEGRAM_FIRST_NAME,
+      total_coins: 0,
+      player_energy: 100,
+      player_level: 1,
+      joined_channel: IS_JOINED
     };
+  } catch (e) {
+    console.error('Failed to decode:', e);
+  }
+}
 
-    // 1. First, declare all variables (The "Definitions" section)
-    const urlParams = new URLSearchParams(window.location.search);
-    const startParam = urlParams.get('data') || urlParams.get('start');
+// 4. Telegram WebApp Integration
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
 
-    let BJS_WEBHOOK = null;
-    let TELEGRAM_UID = null;
-    let TELEGRAM_USERNAME = 'Player';
-    let TELEGRAM_FIRST_NAME = 'Player';
-    let IS_JOINED = false;
-    let REFERRAL_CODE = null;
-    let REFERRAL_COUNT = 0;
+const tgUser = tg?.initDataUnsafe?.user;
+TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
 
-    // --- MOVE THESE UP FROM THE MIDDLE OF YOUR CODE ---
-    let playerData = null; 
-    let allPlayersData = [];
-    let config = { game_title: 'TON FOOTBALL', welcome_message: 'Play & Earn' };
-    // --------------------------------------------------
-
-    // 2. Now, run the Decoder (The "Logic" section)
-    if (startParam) {
-      try {
-        const decodedStr = atob(decodeURIComponent(startParam));
-        const data = JSON.parse(decodedStr);
-
-        TELEGRAM_UID = data.user_id || data.user?.user_id;
-        TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
-        TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
-        BJS_WEBHOOK = data.webhook;
-        IS_JOINED = (data.joined === 1 || data.joined === "1");
-        REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
-        REFERRAL_COUNT = data.ref_count || 0;
-
-        // Now this will NOT error because playerData was declared above
-        playerData = {
-          telegram_id: TELEGRAM_UID,
-          username: TELEGRAM_USERNAME,
-          total_coins: 0,
-          player_energy: 100,
-          player_level: 1,
-          joined_channel: IS_JOINED
-        };
-      } catch (e) {
-        console.error('Failed to decode:', e);
-      }
-    }
-
-        // --- NEW FIX END ---
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
-
-    // Ensure IDs are synced even if param fails
-    const tgUser = tg?.initDataUnsafe?.user;
-    TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
-    
-    // Final check: if we have a UID but no playerData yet, make a shell
-    if (TELEGRAM_UID !== 'unknown' && !playerData) {
-        playerData = { telegram_id: TELEGRAM_UID, total_coins: 0, player_energy: 100 };
-    }
-
-    // Refresh display immediately so buttons unlock
-    document.addEventListener('DOMContentLoaded', () => {
-        updateStatsDisplay(); 
-    });
-
-    // -------------------- Webhook sender --------------------
-    async function sendToBot(eventType, data = {}) {
-      if (!BJS_WEBHOOK) return;
-      const payload = {
-        event: eventType,
-        user_id: TELEGRAM_UID,
+// Create shell if decode failed but we have a TG ID
+if (TELEGRAM_UID !== 'unknown' && !playerData) {
+    playerData = { 
+        telegram_id: TELEGRAM_UID, 
         username: TELEGRAM_USERNAME,
-        first_name: TELEGRAM_FIRST_NAME,
-        ...data,
-        timestamp: Date.now()
-      };
-      try {
-        const response = await fetch(BJS_WEBHOOK, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (response.ok) {
-          return await response.json();
-        }
-      } catch (e) {
-        console.warn('Webhook send failed', e);
-      }
-      return null;
-    }
+        total_coins: 0, 
+        player_energy: 100 
+    };
+}
 
-    // -------------------- Force join channel check --------------------
-    let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
+// 5. UI Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    // Only call if function exists in your main game logic
+    if (typeof updateStatsDisplay === "function") {
+        updateStatsDisplay(); 
+    }
     
-    // UI sync for join banner
-    document.addEventListener('DOMContentLoaded', () => {
-      const banner = document.getElementById('join-channel-banner');
-      if (banner) {
-        if (!joinedChannel) {
-          banner.classList.remove('hidden');
+    // Sync Banner
+    const banner = document.getElementById('join-channel-banner');
+    if (banner) {
+        let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
+        if (joinedChannel) {
+            banner.classList.add('hidden');
         } else {
-          banner.classList.add('hidden');
+            banner.classList.remove('hidden');
         }
-      }
-    });
-
-    async function verifyChannelJoin() {
-      showInlineMessage('Verifying...', 'info');
-      const response = await sendToBot('verify_channel', {});
-      if (response && response.joined === true) {
-        joinedChannel = true;
-        localStorage.setItem('joinedChannel', 'true');
-        document.getElementById('join-channel-banner').classList.add('hidden');
-        showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
-        updateStatsDisplay(); // Refresh play button
-      } else {
-        showInlineMessage('❌ Not a member yet. Please join the channel first.', 'error');
-      }
     }
+});
+
+// -------------------- Webhook sender --------------------
+async function sendToBot(eventType, data = {}) {
+  if (!BJS_WEBHOOK) return;
+  const payload = {
+    event: eventType,
+    user_id: TELEGRAM_UID,
+    username: TELEGRAM_USERNAME,
+    first_name: TELEGRAM_FIRST_NAME,
+    ...data,
+    timestamp: Date.now()
+  };
+  try {
+    const response = await fetch(BJS_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (response.ok) return await response.json();
+  } catch (e) {
+    console.warn('Webhook send failed', e);
+  }
+  return null;
+}
+
+async function verifyChannelJoin() {
+  showInlineMessage('Verifying...', 'info');
+  const response = await sendToBot('verify_channel', {});
+  if (response && response.joined === true) {
+    localStorage.setItem('joinedChannel', 'true');
+    document.getElementById('join-channel-banner').classList.add('hidden');
+    showInlineMessage('✅ Verified!', 'success');
+    if (typeof updateStatsDisplay === "function") updateStatsDisplay();
+  } else {
+    showInlineMessage('❌ Join first!', 'error');
+  }
+}
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
@@ -1182,60 +1184,53 @@
 
     // -------------------- Initialize SDK & Data --------------------
     async function initSDK() {
+      // 1. Initialize Element SDK (Title/Config)
       if (window.elementSdk) {
         await window.elementSdk.init({
           defaultConfig,
           onConfigChange: async (newConfig) => {
             config = { ...defaultConfig, ...newConfig };
-            updateUI();
-          },
-          mapToCapabilities: (cfg) => ({
-            recolorables: [],
-            borderables: [],
-            fontEditable: undefined,
-            fontSizeable: undefined
-          }),
-          mapToEditPanelValues: (cfg) => new Map([
-            ['game_title', cfg.game_title || defaultConfig.game_title],
-            ['welcome_message', cfg.welcome_message || defaultConfig.welcome_message]
-          ])
+            if (typeof updateUI === "function") updateUI();
+          }
         });
       }
 
+      // 2. Initialize Data SDK (The Player Database)
       if (window.dataSdk) {
         const dataHandler = {
           onDataChanged(data) {
             allPlayersData = data.sort((a, b) => (b.total_coins || 0) - (a.total_coins || 0));
 
-            const savedId = localStorage.getItem('playerId');
-            if (savedId) {
-              playerData = data.find(p => p.id === savedId) || null;
-            }
-
-            if (!playerData && data.length > 0) {
-              playerData = data[0];
-              localStorage.setItem('playerId', playerData.id);
-            }
-
-            // If we have Telegram user, ensure playerData matches
-            if (TELEGRAM_UID && (!playerData || playerData.telegram_id !== TELEGRAM_UID)) {
-              const existing = data.find(p => p.telegram_id === TELEGRAM_UID);
+            // PRIORITY 1: Find player by Telegram ID (Best for multi-device/Bot)
+            if (TELEGRAM_UID && TELEGRAM_UID !== 'unknown') {
+              const existing = data.find(p => String(p.telegram_id) === String(TELEGRAM_UID));
               if (existing) {
                 playerData = existing;
                 localStorage.setItem('playerId', playerData.id);
               } else {
+                // If not in database, create them immediately
                 createNewTelegramPlayer();
+                return; // Stop here, onDataChanged will fire again after creation
+              }
+            } 
+            // PRIORITY 2: Fallback to LocalStorage (For testing/browsers)
+            else {
+              const savedId = localStorage.getItem('playerId');
+              if (savedId) {
+                playerData = data.find(p => p.id === savedId) || null;
               }
             }
 
+            // Sync UI now that playerData is set
             updateStatsDisplay();
-            updateLeaderboard();
-            updateReferralDisplay();
+            if (typeof updateLeaderboard === "function") updateLeaderboard();
+            if (typeof updateReferralDisplay === "function") updateReferralDisplay();
 
-            // Handle referral param
+            // Handle referral logic
             if (REFERRAL_CODE && playerData && !playerData.referred_by) {
-              document.getElementById('referral-code-input').value = REFERRAL_CODE;
-              showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
+               const input = document.getElementById('referral-code-input');
+               if (input) input.value = REFERRAL_CODE;
+               showInlineMessage('Referral detected! Claim your bonus.', 'success');
             }
           }
         };
@@ -1243,14 +1238,17 @@
         const result = await window.dataSdk.init(dataHandler);
         if (!result.isOk) {
           console.error('Failed to initialize data SDK');
+          showInlineMessage('Database Connection Error', 'error');
         }
       }
     }
 
     async function createNewTelegramPlayer() {
-      // Use Telegram UID as part of ID for consistency
+      // Don't create if already exists or ID is missing
+      if (!TELEGRAM_UID || TELEGRAM_UID === 'unknown') return;
+
       const newPlayer = {
-        id: 'player_' + TELEGRAM_UID + '_' + Math.random().toString(36).substr(2, 4),
+        id: 'p_' + TELEGRAM_UID, // Clean, predictable ID
         username: TELEGRAM_USERNAME,
         first_name: TELEGRAM_FIRST_NAME,
         telegram_id: TELEGRAM_UID,
@@ -1263,24 +1261,31 @@
         draws: 0,
         high_score: 0,
         ads_watched: 0,
-        player_energy: MAX_ENERGY,
+        player_energy: typeof MAX_ENERGY !== 'undefined' ? MAX_ENERGY : 100,
         player_level: 1,
         super_player_unlocked: false,
         referral_code: generateReferralCode(),
-        referred_by: '',
+        referred_by: (REFERRAL_CODE && REFERRAL_CODE !== 'none') ? REFERRAL_CODE : '',
         referral_count: 0,
         referral_earnings: 0,
-        joined_channel: joinedChannel,
+        joined_channel: IS_JOINED, // Use the status from the bot
         created_at: new Date().toISOString(),
         last_played: new Date().toISOString()
       };
 
+      // Set locally immediately so the UI doesn't flicker/error
+      playerData = newPlayer;
+      updateStatsDisplay();
+
+      // Save to server
       const result = await window.dataSdk.create(newPlayer);
       if (result.isOk) {
         localStorage.setItem('playerId', newPlayer.id);
+        // Tell the bot a new player joined
         sendToBot('player_created', { player: newPlayer });
       }
     }
+
 
     function generateReferralCode() {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
