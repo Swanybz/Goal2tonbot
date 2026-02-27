@@ -1022,7 +1022,6 @@
     // Global error handler
     window.onerror = function(msg, url, line) {
       console.error('Global error:', msg, 'at', url, 'line', line);
-      // Avoid showing errors to user for now
       return true;
     };
 
@@ -1091,10 +1090,11 @@
       tg.expand();
     }
 
-    // Get webhook URL from query param
+    // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const BJS_WEBHOOK = urlParams.get('webhook');
     const REFERRER_PARAM = urlParams.get('start'); // e.g., "7877592985"
+    const JOINED_PARAM = urlParams.get('joined');  // "1" if bot verified channel
 
     // Determine user ID
     let currentUserId = getCurrentUserId();
@@ -1132,6 +1132,12 @@
         created_at: new Date().toISOString(),
         last_played: new Date().toISOString()
       };
+      updateUser(playerData);
+    }
+
+    // Handle channel join parameter from bot
+    if (JOINED_PARAM === '1') {
+      playerData.joined_channel = true;
       updateUser(playerData);
     }
 
@@ -1201,10 +1207,9 @@
 
     async function verifyChannelJoin() {
       showInlineMessage('Verifying...', 'info');
-      // In a real scenario, the bot would verify. For now, we simulate.
-      // We'll send a verify_channel event to webhook and expect response.
+      // Send verify_channel event to webhook
       const response = await sendToBot('verify_channel', {});
-      // For demo, we'll assume verification succeeded if we get any response.
+      // If bot responds with joined:true, update status
       if (response && response.joined === true) {
         joinedChannel = true;
         playerData.joined_channel = true;
