@@ -582,10 +582,10 @@
        TIME
       </div>
      </div>
-     <div class="flex items-center gap-3"><span id="ai-score" class="text-3xl font-black">0</span>
-      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center font-bold">
-       AI
-      </div>
+     <div class="flex items-center gap-3">
+      <span id="ai-score" class="text-3xl font-black">0</span>
+      <!-- AI Team Badge - FIX: added missing element -->
+      <div id="ai-team-badge" class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center font-bold text-xs">AI</div>
      </div>
     </div>
     <div class="flex items-center justify-between max-w-lg mx-auto mt-2 text-xs">
@@ -1001,6 +1001,13 @@
   </div>
 
   <script>
+    // Global error handler for debugging
+    window.onerror = function(msg, url, line) {
+      console.error('Global error:', msg, 'at', url, 'line', line);
+      showInlineMessage('Game error: ' + msg, 'error');
+      return false;
+    };
+
     // -------------------- Telegram & Webhook Setup --------------------
     const tg = window.Telegram?.WebApp;
     if (tg) {
@@ -1045,14 +1052,21 @@
     }
 
     // -------------------- Force join channel check --------------------
-    let joinedChannel = JOINED_PARAM === '1';
+    // FIX: persist joined state
+    let joinedChannel = JOINED_PARAM === '1' || localStorage.getItem('joinedChannel') === 'true';
     if (!joinedChannel) {
       document.getElementById('join-channel-banner').classList.remove('hidden');
+    } else {
+      document.getElementById('join-channel-banner').classList.add('hidden');
     }
 
     async function verifyChannelJoin() {
+      joinedChannel = true;
+      localStorage.setItem('joinedChannel', 'true');
+      document.getElementById('join-channel-banner').classList.add('hidden');
       sendToBot('verify_channel', {});
-      showInlineMessage('Verification requested. Please wait and then click Play again.', 'info');
+      showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
+      updateStatsDisplay(); // Refresh play button state
     }
 
     // -------------------- Constants --------------------
@@ -1382,15 +1396,16 @@
       }
     }
 
-    // -------------------- Game Functions (preserved from original) --------------------
+    // -------------------- Game Functions --------------------
     async function checkAndStartGame() {
       if (!playerData) {
-        // Player creation is handled by dataSdk, but just in case
+        showInlineMessage('Loading player data... Please wait.', 'info');
         return;
       }
 
       if (!joinedChannel) {
         showInlineMessage('Please join our Telegram channel first!', 'warning');
+        document.getElementById('join-channel-banner').classList.remove('hidden');
         return;
       }
 
@@ -1403,48 +1418,58 @@
     }
 
     function startGame() {
-      gameState = {
-        isPlaying: true,
-        userScore: 0,
-        aiScore: 0,
-        timeRemaining: MATCH_DURATION,
-        coinsEarned: 0,
-        goalsThisMatch: 0,
-        selectedPlayer: null,
-        ballPossession: 'user',
-        energy: gameState.energy - ENERGY_COST_PER_MATCH,
-        maxEnergy: gameState.maxEnergy
-      };
+      try {
+        gameState = {
+          isPlaying: true,
+          userScore: 0,
+          aiScore: 0,
+          timeRemaining: MATCH_DURATION,
+          coinsEarned: 0,
+          goalsThisMatch: 0,
+          selectedPlayer: null,
+          ballPossession: 'user',
+          energy: gameState.energy - ENERGY_COST_PER_MATCH,
+          maxEnergy: gameState.maxEnergy
+        };
 
-      // Randomize AI team
-      const randomTeam = aiTeamNames[Math.floor(Math.random() * aiTeamNames.length)];
-      document.getElementById('ai-team-badge').textContent = randomTeam.name;
-      document.getElementById('ai-team-badge').className = `w-10 h-10 rounded-full bg-gradient-to-br ${randomTeam.color} flex items-center justify-center font-bold text-xs`;
-
-      // Randomize user team color
-      const userHue = Math.floor(Math.random() * 360);
-      document.querySelectorAll('.player.user').forEach(el => {
-        el.style.background = `linear-gradient(135deg, hsl(${userHue}, 100%, 50%), hsl(${userHue}, 100%, 30%))`;
-      });
-
-      showScreen('game-screen');
-      initializePlayers();
-      resetBall();
-      updateGameHUD();
-
-      lastTime = performance.now();
-      animationFrameId = requestAnimationFrame(gameLoop);
-
-      gameTimerInterval = setInterval(() => {
-        if (gameState.isPlaying && gameState.timeRemaining > 0) {
-          gameState.timeRemaining -= 1;
-          updateGameHUD();
-
-          if (gameState.timeRemaining <= 0) {
-            endGame();
-          }
+        // Randomize AI team
+        const randomTeam = aiTeamNames[Math.floor(Math.random() * aiTeamNames.length)];
+        const aiBadge = document.getElementById('ai-team-badge');
+        if (aiBadge) {
+          aiBadge.textContent = randomTeam.name;
+          aiBadge.className = `w-10 h-10 rounded-full bg-gradient-to-br ${randomTeam.color} flex items-center justify-center font-bold text-xs`;
         }
-      }, 1000);
+
+        // Randomize user team color - deferred after players created
+        const userHue = Math.floor(Math.random() * 360);
+        setTimeout(() => {
+          document.querySelectorAll('.player.user').forEach(el => {
+            el.style.background = `linear-gradient(135deg, hsl(${userHue}, 100%, 50%), hsl(${userHue}, 100%, 30%))`;
+          });
+        }, 100);
+
+        showScreen('game-screen');
+        initializePlayers();
+        resetBall();
+        updateGameHUD();
+
+        lastTime = performance.now();
+        animationFrameId = requestAnimationFrame(gameLoop);
+
+        gameTimerInterval = setInterval(() => {
+          if (gameState.isPlaying && gameState.timeRemaining > 0) {
+            gameState.timeRemaining -= 1;
+            updateGameHUD();
+
+            if (gameState.timeRemaining <= 0) {
+              endGame();
+            }
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Error starting game:', error);
+        showInlineMessage('Error starting game. Please refresh.', 'error');
+      }
     }
 
     function initializePlayers() {
@@ -2025,7 +2050,7 @@
       }
     }
 
-    // -------------------- Upgrade Functions (with webhook) --------------------
+    // -------------------- Upgrade Functions --------------------
     async function upgradeEnergy() {
       if (!playerData) return;
 
@@ -2106,7 +2131,7 @@
       }
     }
 
-    // -------------------- Wallet & Withdraw (with webhook) --------------------
+    // -------------------- Wallet & Withdraw --------------------
     async function saveWalletAddress() {
       if (!playerData) return;
 
@@ -2203,7 +2228,7 @@
       }
     }
 
-    // -------------------- Referral Functions (with webhook) --------------------
+    // -------------------- Referral Functions --------------------
     function copyReferralCode() {
       const code = playerData?.referral_code || '';
       if (!code || code === 'LOADING...') return;
