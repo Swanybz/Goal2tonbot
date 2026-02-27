@@ -947,14 +947,14 @@
    </div>
   </div>
 
-  <!-- Ad Reward Screen -->
+  <!-- Ad Reward Screen (Updated with Cancel) -->
   <div id="ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
     <div class="text-6xl mb-4">
      📺
     </div>
     <h2 class="game-title text-2xl font-bold mb-4">Monetag Advertisement</h2>
-    <p class="text-gray-400 mb-6">Please wait while the ad plays...</p>
+    <p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
     <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden">
      <div id="ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width: 0%; transition: width 1s linear;"></div>
     </div>
@@ -968,6 +968,9 @@
       </svg><span class="text-cyan-400 font-bold">0.0005 TON</span>
      </div>
      <p class="text-xs text-gray-400 text-center">+ Restore 20 Energy</p>
+    </div>
+    <div class="mt-4">
+     <button onclick="cancelAd()" class="px-4 py-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg text-red-400 text-sm transition-all">Cancel</button>
     </div>
    </div>
   </div>
@@ -1001,124 +1004,175 @@
    </div>
   </div>
 
+  <!-- Audio elements for sound effects -->
+  <audio id="goal-sound" preload="auto" style="display:none">
+    <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="kick-sound" preload="auto" style="display:none">
+    <source src="https://www.soundjay.com/misc/sounds/kick-01.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="pass-sound" preload="auto" style="display:none">
+    <source src="https://www.soundjay.com/misc/sounds/button-09.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="whistle-sound" preload="auto" style="display:none">
+    <source src="https://www.soundjay.com/misc/sounds/referee-whistle-01.mp3" type="audio/mpeg">
+  </audio>
+
   <script>
-    // Global error handler that ignores harmless "before initialization" errors
+    // Global error handler
     window.onerror = function(msg, url, line) {
-      // Ignore errors about playerData or allPlayersData not being initialized yet
-      if (msg.includes('playerData') || msg.includes('allPlayersData')) {
-        console.warn('Ignored initialization error:', msg);
-        return true; // Prevent default error handling
-      }
       console.error('Global error:', msg, 'at', url, 'line', line);
-      showInlineMessage('Game error: ' + msg, 'error');
-      return false;
+      // Avoid showing errors to user for now
+      return true;
     };
 
-    // -------------------- ROBUST BASE64/JSON DECODER (from spin & win) --------------------
-    function tryParseJSONorB64(input) {
-      if (input === undefined || input === null) return null;
-      if (typeof input === 'object') return input;
-      let s = String(input).trim();
+    // -------------------- Utility functions --------------------
+    function playSound(id) {
+      try {
+        const audio = document.getElementById(id);
+        if (audio) audio.play().catch(e => console.log('Audio play failed', e));
+      } catch(e) {}
+    }
 
-      // Direct JSON
-      if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
-        try { return JSON.parse(s); } catch(e){}
+    // -------------------- LocalStorage based data persistence --------------------
+    const STORAGE_KEY_USERS = 'ton_football_users';
+    const STORAGE_KEY_CURRENT_USER = 'ton_football_current_user';
+
+    // Load all users from localStorage
+    function loadAllUsers() {
+      const data = localStorage.getItem(STORAGE_KEY_USERS);
+      return data ? JSON.parse(data) : [];
+    }
+
+    // Save all users
+    function saveAllUsers(users) {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+    }
+
+    // Load current user ID
+    function getCurrentUserId() {
+      return localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+    }
+
+    // Set current user ID
+    function setCurrentUserId(id) {
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, id);
+    }
+
+    // Get user by ID
+    function getUserById(id) {
+      const users = loadAllUsers();
+      return users.find(u => u.id === id) || null;
+    }
+
+    // Update or create user
+    function updateUser(userData) {
+      const users = loadAllUsers();
+      const index = users.findIndex(u => u.id === userData.id);
+      if (index >= 0) {
+        users[index] = { ...users[index], ...userData };
+      } else {
+        users.push(userData);
       }
-
-      // URL-decoded JSON
-      try {
-        const dec = decodeURIComponent(s);
-        if ((dec.startsWith('{') && dec.endsWith('}')) || (dec.startsWith('[') && dec.endsWith(']'))) {
-          return JSON.parse(dec);
-        }
-      } catch(e){}
-
-      // Strings wrapped in quotes -> unwrap and retry
-      try {
-        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-          const unq = s.substring(1, s.length-1);
-          const tryInner = tryParseJSONorB64(unq);
-          if (tryInner) return tryInner;
-        }
-      } catch(e){}
-
-      // Base64 (URL-safe)
-      try {
-        let b = s.replace(/-/g,'+').replace(/_/g,'/');
-        try { b = decodeURIComponent(b); } catch(e){}
-        b = b + '='.repeat((4 - (b.length % 4)) % 4);
-        let raw = atob(b);
-        try { raw = decodeURIComponent(escape(raw)); } catch(e){}
-        if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
-          return JSON.parse(raw);
-        }
-        const nested = tryParseJSONorB64(raw);
-        if (nested) return nested;
-        return raw;
-      } catch(e){}
-
-      // fallback: try atob directly
-      try {
-        let raw = atob(s);
-        try { raw = decodeURIComponent(escape(raw)); } catch(e){}
-        const nested = tryParseJSONorB64(raw);
-        if (nested) return nested;
-        if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
-          return JSON.parse(raw);
-        }
-        return raw;
-      } catch(e){}
-
-      return null;
+      saveAllUsers(users);
+      // If this is current user, also update in-memory playerData
+      if (userData.id === getCurrentUserId()) {
+        playerData = userData;
+        updateStatsDisplay();
+        updateLeaderboard();
+        updateReferralDisplay();
+      }
     }
 
-    function parseDeeplinkPayload() {
-      try {
-        const qs = new URLSearchParams(location.search || '');
-        const candidates = [];
-
-        ['start','data','s','p','payload'].forEach(k => { const v = qs.get(k); if (v) candidates.push(v); });
-
-        if (location.hash) {
-          let rawHash = location.hash.replace(/^#/,'');
-          if (rawHash.includes('?')) {
-            const hashQs = rawHash.split('?').slice(1).join('?');
-            const hparams = new URLSearchParams(hashQs);
-            ['start','data','s','p','payload'].forEach(k => { const v = hparams.get(k); if (v) candidates.push(v); });
-          } else {
-            candidates.push(rawHash);
-          }
-        }
-
-        if (location.search && location.search.length > 1) {
-          candidates.push(location.search.replace(/^\?/,''));
-        }
-
-        for (const c of candidates) {
-          if (!c) continue;
-          const parsed = tryParseJSONorB64(c);
-          if (parsed && typeof parsed === 'object') {
-            try { sessionStorage.setItem('gainGridUserData', JSON.stringify(parsed)); } catch(e){}
-            return parsed;
-          }
-        }
-
-        const cached = sessionStorage.getItem('gainGridUserData');
-        if (cached) {
-          try { return JSON.parse(cached); } catch(e){}
-        }
-        return null;
-      } catch(e) { console.warn('parseDeeplinkPayload err', e); return null; }
+    // -------------------- Telegram & Webhook Setup --------------------
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
     }
 
-    // ---------- Post to bot ----------
+    // Get webhook URL from query param
+    const urlParams = new URLSearchParams(window.location.search);
+    const BJS_WEBHOOK = urlParams.get('webhook');
+    const REFERRER_PARAM = urlParams.get('start'); // e.g., "7877592985"
+
+    // Determine user ID
+    let currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      // Generate a new user ID (use telegram ID if available, else random)
+      const tgUser = tg?.initDataUnsafe?.user;
+      currentUserId = tgUser?.id ? String(tgUser.id) : 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      setCurrentUserId(currentUserId);
+    }
+
+    // Load current user data (or create default)
+    let playerData = getUserById(currentUserId);
+    if (!playerData) {
+      playerData = {
+        id: currentUserId,
+        username: tg?.initDataUnsafe?.user?.username || 'Player',
+        first_name: tg?.initDataUnsafe?.user?.first_name || 'Player',
+        wallet_address: '',
+        total_coins: 0,
+        goals_scored: 0,
+        games_played: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        high_score: 0,
+        ads_watched: 0,
+        player_energy: 100,
+        player_level: 1,
+        super_player_unlocked: false,
+        referral_code: currentUserId, // Use user ID as referral code
+        referred_by: '',
+        referral_count: 0,
+        referral_earnings: 0,
+        joined_channel: false,
+        created_at: new Date().toISOString(),
+        last_played: new Date().toISOString()
+      };
+      updateUser(playerData);
+    }
+
+    // Handle referral if present
+    if (REFERRER_PARAM && REFERRER_PARAM !== playerData.id && !playerData.referred_by) {
+      // Check if referrer exists in our users list
+      const referrer = getUserById(REFERRER_PARAM);
+      if (referrer) {
+        // Award bonus to current user
+        playerData.player_energy = Math.min(150, (playerData.player_energy || 100) + 30);
+        playerData.referred_by = REFERRER_PARAM;
+        updateUser(playerData);
+
+        // Update referrer's stats
+        referrer.referral_count = (referrer.referral_count || 0) + 1;
+        referrer.referral_earnings = (referrer.referral_earnings || 0) + 0.0010;
+        referrer.total_coins = (referrer.total_coins || 0) + 0.0010;
+        updateUser(referrer);
+
+        // Send webhook events
+        sendToBot('referral_used', {
+          referrer_id: REFERRER_PARAM,
+          bonus_energy: 30,
+          reward: 0.0010
+        });
+
+        showInlineMessage('Referral bonus applied! +30 Energy', 'success');
+      } else {
+        // Referrer not found in local storage (maybe new user, we can still record)
+        // For now, just ignore
+      }
+    }
+
+    // -------------------- Webhook sender --------------------
     async function sendToBot(eventType, data = {}) {
       if (!BJS_WEBHOOK) return null;
       const payload = {
         event: eventType,
-        user_id: TELEGRAM_UID,
-        username: TELEGRAM_USERNAME,
-        first_name: TELEGRAM_FIRST_NAME,
+        user_id: playerData.id,
+        username: playerData.username,
+        first_name: playerData.first_name,
         ...data,
         timestamp: Date.now()
       };
@@ -1137,41 +1191,8 @@
       return null;
     }
 
-    // ---------- Extract data from payload ----------
-    let BJS_WEBHOOK = null;
-    let TELEGRAM_UID = null;
-    let TELEGRAM_USERNAME = 'Player';
-    let TELEGRAM_FIRST_NAME = 'Player';
-    let IS_JOINED = false;
-    let REFERRAL_CODE = null;
-    let REFERRAL_COUNT = 0;
-
-    const incomingPayload = parseDeeplinkPayload();
-    if (incomingPayload) {
-      console.log('Decoded payload:', incomingPayload);
-      // expected structure: { user_id, user: { user_id, username, first_name }, webhook, ref, joined, ref_count }
-      TELEGRAM_UID = incomingPayload.user_id || (incomingPayload.user && incomingPayload.user.user_id);
-      TELEGRAM_USERNAME = (incomingPayload.user && incomingPayload.user.username) || 'Player';
-      TELEGRAM_FIRST_NAME = (incomingPayload.user && incomingPayload.user.first_name) || 'Player';
-      BJS_WEBHOOK = incomingPayload.webhook;
-      IS_JOINED = incomingPayload.joined === 1;
-      REFERRAL_CODE = incomingPayload.ref !== 'none' ? incomingPayload.ref : null;
-      REFERRAL_COUNT = incomingPayload.ref_count || 0;
-    } else {
-      // fallback to Telegram WebApp
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-      }
-      const tgUser = tg?.initDataUnsafe?.user;
-      TELEGRAM_UID = tgUser?.id || 'unknown';
-      TELEGRAM_USERNAME = tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
-      TELEGRAM_FIRST_NAME = tgUser?.first_name || 'Player';
-    }
-
     // -------------------- Force join channel check --------------------
-    let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
+    let joinedChannel = playerData.joined_channel || false;
     if (!joinedChannel) {
       document.getElementById('join-channel-banner').classList.remove('hidden');
     } else {
@@ -1180,13 +1201,17 @@
 
     async function verifyChannelJoin() {
       showInlineMessage('Verifying...', 'info');
+      // In a real scenario, the bot would verify. For now, we simulate.
+      // We'll send a verify_channel event to webhook and expect response.
       const response = await sendToBot('verify_channel', {});
+      // For demo, we'll assume verification succeeded if we get any response.
       if (response && response.joined === true) {
         joinedChannel = true;
-        localStorage.setItem('joinedChannel', 'true');
+        playerData.joined_channel = true;
+        updateUser(playerData);
         document.getElementById('join-channel-banner').classList.add('hidden');
         showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
-        updateStatsDisplay(); // Refresh play button
+        updateStatsDisplay();
       } else {
         showInlineMessage('❌ Not a member yet. Please join the channel first.', 'error');
       }
@@ -1212,8 +1237,7 @@
     };
 
     let config = { ...defaultConfig };
-    let playerData = null;          // <-- declared here, before any usage
-    let allPlayersData = [];
+    let allPlayersData = loadAllUsers();
 
     let gameState = {
       isPlaying: false,
@@ -1224,8 +1248,8 @@
       goalsThisMatch: 0,
       selectedPlayer: null,
       ballPossession: 'user',
-      energy: MAX_ENERGY,
-      maxEnergy: MAX_ENERGY
+      energy: playerData.player_energy,
+      maxEnergy: playerData.player_level >= 2 ? 150 : MAX_ENERGY
     };
 
     let userPlayers = [];
@@ -1237,8 +1261,9 @@
     let gameTimerInterval;
     let lastTime = 0;
     let animationFrameId = null;
+    let adCanceled = false;
 
-    // -------------------- Initialize SDK & Data --------------------
+    // -------------------- Initialize SDK & Data (if any) --------------------
     async function initSDK() {
       if (window.elementSdk) {
         await window.elementSdk.init({
@@ -1261,133 +1286,18 @@
       }
 
       if (window.dataSdk) {
-        const dataHandler = {
-          onDataChanged(data) {
-            allPlayersData = data.sort((a, b) => (b.total_coins || 0) - (a.total_coins || 0));
-
-            const savedId = localStorage.getItem('playerId');
-            if (savedId) {
-              playerData = data.find(p => p.id === savedId) || null;
-            }
-
-            if (!playerData && data.length > 0) {
-              playerData = data[0];
-              localStorage.setItem('playerId', playerData.id);
-            }
-
-            // If we have Telegram user, ensure playerData matches
-            if (TELEGRAM_UID && (!playerData || playerData.telegram_id !== TELEGRAM_UID)) {
-              const existing = data.find(p => p.telegram_id === TELEGRAM_UID);
-              if (existing) {
-                playerData = existing;
-                localStorage.setItem('playerId', playerData.id);
-              } else {
-                createNewTelegramPlayer();
-              }
-            }
-
-            updateStatsDisplay();
-            updateLeaderboard();
-            updateReferralDisplay();
-
-            // Handle referral param
-            if (REFERRAL_CODE && playerData && !playerData.referred_by) {
-              document.getElementById('referral-code-input').value = REFERRAL_CODE;
-              showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
-            }
-          }
-        };
-
-        const result = await window.dataSdk.init(dataHandler);
-        if (!result.isOk) {
-          console.error('Failed to initialize data SDK');
-        }
-      } else {
-        // Fallback if no dataSdk
-        console.warn('dataSdk not present, using fallback');
-        const today = new Date().toISOString().split('T')[0];
-        playerData = {
-          id: TELEGRAM_UID || 'fallback',
-          username: TELEGRAM_USERNAME,
-          first_name: TELEGRAM_FIRST_NAME,
-          telegram_id: TELEGRAM_UID,
-          wallet_address: '',
-          total_coins: 0,
-          goals_scored: 0,
-          games_played: 0,
-          wins: 0,
-          losses: 0,
-          draws: 0,
-          high_score: 0,
-          ads_watched: 0,
-          player_energy: MAX_ENERGY,
-          player_level: 1,
-          super_player_unlocked: false,
-          referral_code: generateReferralCode(),
-          referred_by: '',
-          referral_count: 0,
-          referral_earnings: 0,
-          joined_channel: joinedChannel,
-          created_at: new Date().toISOString(),
-          last_played: new Date().toISOString()
-        };
-        updateStatsDisplay();
-        updateLeaderboard();
-        updateReferralDisplay();
+        // If dataSdk exists, we could sync, but we'll rely on localStorage for now.
+        // We'll just ignore and use localStorage.
       }
     }
 
-    async function createNewTelegramPlayer() {
-      const newPlayer = {
-        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        username: TELEGRAM_USERNAME,
-        first_name: TELEGRAM_FIRST_NAME,
-        telegram_id: TELEGRAM_UID,
-        wallet_address: '',
-        total_coins: 0,
-        goals_scored: 0,
-        games_played: 0,
-        wins: 0,
-        losses: 0,
-        draws: 0,
-        high_score: 0,
-        ads_watched: 0,
-        player_energy: MAX_ENERGY,
-        player_level: 1,
-        super_player_unlocked: false,
-        referral_code: generateReferralCode(),
-        referred_by: '',
-        referral_count: 0,
-        referral_earnings: 0,
-        joined_channel: joinedChannel,
-        created_at: new Date().toISOString(),
-        last_played: new Date().toISOString()
-      };
-
-      const result = await window.dataSdk.create(newPlayer);
-      if (result.isOk) {
-        localStorage.setItem('playerId', newPlayer.id);
-        sendToBot('player_created', { player: newPlayer });
-      }
-    }
-
-    function generateReferralCode() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let code = 'TON';
-      for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return code;
-    }
-
-    // -------------------- UI Updates --------------------
     function updateUI() {
       document.getElementById('main-title').textContent = config.game_title || defaultConfig.game_title;
       document.getElementById('welcome-msg').textContent = config.welcome_message || defaultConfig.welcome_message;
     }
 
     function updateStatsDisplay() {
-      if (!playerData) return; // safe guard
+      if (!playerData) return;
 
       const coins = (playerData.total_coins || 0).toFixed(4);
       const energy = playerData.player_energy || MAX_ENERGY;
@@ -1446,7 +1356,7 @@
     }
 
     function updateReferralDisplay() {
-      if (!playerData) return; // safe guard
+      if (!playerData) return;
 
       const referralCode = playerData.referral_code || 'LOADING...';
       const referralCount = playerData.referral_count || 0;
@@ -1457,7 +1367,7 @@
       document.getElementById('referral-earnings').textContent = referralEarnings;
 
       const botUsername = 'Goal2Ton_bot';
-      const referralLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
+      const referralLink = `https://t.me/${botUsername}?start=${referralCode}`;
       document.getElementById('referral-link-input').value = referralLink;
 
       if (playerData.referred_by) {
@@ -1472,14 +1382,15 @@
     }
 
     function updateLeaderboard() {
-      if (!playerData) return; // safe guard
+      if (!playerData) return;
       const list = document.getElementById('leaderboard-list');
       list.innerHTML = '';
 
-      const topPlayers = allPlayersData.slice(0, 50);
+      const users = loadAllUsers();
+      const topPlayers = users.sort((a, b) => (b.total_coins || 0) - (a.total_coins || 0)).slice(0, 50);
 
       topPlayers.forEach((player, index) => {
-        const isCurrentUser = playerData && player.id === playerData.id;
+        const isCurrentUser = player.id === playerData.id;
         const entry = document.createElement('div');
         entry.className = `leaderboard-entry flex items-center justify-between p-4 rounded-xl ${isCurrentUser ? 'bg-cyan-500/20 border-2 border-cyan-500' : 'bg-white/5'}`;
 
@@ -1508,11 +1419,9 @@
         list.appendChild(entry);
       });
 
-      if (playerData) {
-        const userRank = allPlayersData.findIndex(p => p.id === playerData.id) + 1;
-        document.getElementById('user-rank').textContent = userRank > 0 ? `#${userRank}` : '#-';
-        document.getElementById('user-leaderboard-coins').textContent = (playerData.total_coins || 0).toFixed(4);
-      }
+      const userRank = users.findIndex(u => u.id === playerData.id) + 1;
+      document.getElementById('user-rank').textContent = userRank > 0 ? `#${userRank}` : '#-';
+      document.getElementById('user-leaderboard-coins').textContent = (playerData.total_coins || 0).toFixed(4);
     }
 
     function showScreen(screenId) {
@@ -1574,6 +1483,7 @@
         initializePlayers();
         resetBall();
         updateGameHUD();
+        playSound('whistle-sound');
 
         lastTime = performance.now();
         animationFrameId = requestAnimationFrame(gameLoop);
@@ -1913,6 +1823,7 @@
           });
 
           document.getElementById('goal-reward').textContent = GOAL_REWARD.toFixed(4);
+          playSound('goal-sound');
           showCelebration();
         } else {
           gameState.aiScore++;
@@ -1965,6 +1876,7 @@
 
     function shootBall(team) {
       gameState.ballPossession = 'none';
+      playSound('kick-sound');
 
       if (team === 'user') {
         const currentPlayer = userPlayers[gameState.selectedPlayer];
@@ -1987,6 +1899,7 @@
 
     function passBall() {
       if (gameState.ballPossession !== 'user') return;
+      playSound('pass-sound');
 
       let nearestIdx = -1;
       let nearestDist = Infinity;
@@ -2097,79 +2010,90 @@
     }
 
     async function saveStats(result) {
-      if (!window.dataSdk || !playerData) return;
+      if (!playerData) return;
 
-      const updatedData = {
-        ...playerData,
-        total_coins: (playerData.total_coins || 0) + gameState.coinsEarned,
-        goals_scored: (playerData.goals_scored || 0) + gameState.goalsThisMatch,
-        games_played: (playerData.games_played || 0) + 1,
-        wins: (playerData.wins || 0) + (result === 'win' ? 1 : 0),
-        losses: (playerData.losses || 0) + (result === 'loss' ? 1 : 0),
-        draws: (playerData.draws || 0) + (result === 'draw' ? 1 : 0),
-        high_score: Math.max(playerData.high_score || 0, gameState.userScore),
-        player_energy: gameState.energy,
-        last_played: new Date().toISOString()
-      };
+      playerData.total_coins = (playerData.total_coins || 0) + gameState.coinsEarned;
+      playerData.goals_scored = (playerData.goals_scored || 0) + gameState.goalsThisMatch;
+      playerData.games_played = (playerData.games_played || 0) + 1;
+      playerData.wins = (playerData.wins || 0) + (result === 'win' ? 1 : 0);
+      playerData.losses = (playerData.losses || 0) + (result === 'loss' ? 1 : 0);
+      playerData.draws = (playerData.draws || 0) + (result === 'draw' ? 1 : 0);
+      playerData.high_score = Math.max(playerData.high_score || 0, gameState.userScore);
+      playerData.player_energy = gameState.energy;
+      playerData.last_played = new Date().toISOString();
 
-      const saveResult = await window.dataSdk.update(updatedData);
-      if (!saveResult.isOk) {
-        console.error('Failed to update stats');
-      }
+      updateUser(playerData);
     }
 
-    // -------------------- Ad Reward (Monetag) --------------------
+    // -------------------- Ad Reward (Monetag) with Cancel --------------------
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
       document.getElementById('ad-screen').classList.add('active');
+      adCanceled = false;
+
+      // Start a fake progress for visual, but rely on Monetag promise
+      let timeLeft = AD_DURATION;
+      const timerEl = document.getElementById('ad-timer');
+      const progressEl = document.getElementById('ad-progress');
+      const messageEl = document.getElementById('ad-message');
+
+      const adInterval = setInterval(() => {
+        if (adCanceled) {
+          clearInterval(adInterval);
+          return;
+        }
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        progressEl.style.width = ((AD_DURATION - timeLeft) / AD_DURATION * 100) + '%';
+        if (timeLeft <= 0) clearInterval(adInterval);
+      }, 1000);
 
       if (typeof show_10656450 === 'function') {
         show_10656450('pop').then(() => {
-          completeAdReward();
-        }).catch(e => {
-          document.getElementById('ad-screen').classList.remove('active');
-          showInlineMessage('Ad not completed. Try again.', 'warning');
-        });
-      } else {
-        // Fallback simulation
-        let timeLeft = AD_DURATION;
-        const timerEl = document.getElementById('ad-timer');
-        const progressEl = document.getElementById('ad-progress');
-
-        const adInterval = setInterval(() => {
-          timeLeft--;
-          timerEl.textContent = timeLeft;
-          progressEl.style.width = ((AD_DURATION - timeLeft) / AD_DURATION * 100) + '%';
-
-          if (timeLeft <= 0) {
+          if (!adCanceled) {
             clearInterval(adInterval);
             completeAdReward();
           }
-        }, 1000);
+        }).catch(e => {
+          if (!adCanceled) {
+            clearInterval(adInterval);
+            document.getElementById('ad-screen').classList.remove('active');
+            showInlineMessage('Ad not completed. Try again.', 'warning');
+          }
+        });
+      } else {
+        // Fallback simulation
+        setTimeout(() => {
+          if (!adCanceled) {
+            clearInterval(adInterval);
+            completeAdReward();
+          }
+        }, AD_DURATION * 1000);
       }
+    }
+
+    function cancelAd() {
+      adCanceled = true;
+      document.getElementById('ad-screen').classList.remove('active');
+      showScreen('menu-screen');
     }
 
     async function completeAdReward() {
       if (!playerData) return;
 
       const energyRestore = 20;
-      const newEnergy = Math.min(gameState.maxEnergy, gameState.energy + energyRestore);
+      const newEnergy = Math.min(gameState.maxEnergy, (playerData.player_energy || MAX_ENERGY) + energyRestore);
 
-      const updatedData = {
-        ...playerData,
-        total_coins: (playerData.total_coins || 0) + AD_REWARD,
-        ads_watched: (playerData.ads_watched || 0) + 1,
-        player_energy: newEnergy
-      };
+      playerData.total_coins = (playerData.total_coins || 0) + AD_REWARD;
+      playerData.ads_watched = (playerData.ads_watched || 0) + 1;
+      playerData.player_energy = newEnergy;
 
-      const result = await window.dataSdk.update(updatedData);
+      updateUser(playerData);
 
-      if (result.isOk) {
-        document.getElementById('ad-screen').classList.remove('active');
-        showScreen('menu-screen');
-        showInlineMessage(`🎁 +${AD_REWARD.toFixed(4)} TON & +${energyRestore} Energy earned!`, 'success');
-        sendToBot('ad_watched', { reward: AD_REWARD, energy_restore: energyRestore });
-      }
+      document.getElementById('ad-screen').classList.remove('active');
+      showScreen('menu-screen');
+      showInlineMessage(`🎁 +${AD_REWARD.toFixed(4)} TON & +${energyRestore} Energy earned!`, 'success');
+      sendToBot('ad_watched', { reward: AD_REWARD, energy_restore: energyRestore });
     }
 
     // -------------------- Upgrade Functions --------------------
@@ -2189,22 +2113,16 @@
         return;
       }
 
-      const updatedData = {
-        ...playerData,
-        total_coins: playerData.total_coins - ENERGY_BOOST_COST,
-        player_level: 2,
-        player_energy: 150
-      };
+      playerData.total_coins -= ENERGY_BOOST_COST;
+      playerData.player_level = 2;
+      playerData.player_energy = 150;
+      updateUser(playerData);
 
-      const result = await window.dataSdk.update(updatedData);
-      if (result.isOk) {
-        showInlineMessage('⚡ Energy upgraded to 150!', 'success');
-        document.getElementById('btn-upgrade-energy').textContent = 'Upgraded ✅';
-        document.getElementById('btn-upgrade-energy').disabled = true;
-        sendToBot('upgrade', { type: 'energy' });
-        playerData = updatedData;
-        updateStatsDisplay();
-      }
+      showInlineMessage('⚡ Energy upgraded to 150!', 'success');
+      document.getElementById('btn-upgrade-energy').textContent = 'Upgraded ✅';
+      document.getElementById('btn-upgrade-energy').disabled = true;
+      sendToBot('upgrade', { type: 'energy' });
+      updateStatsDisplay();
     }
 
     async function upgradeLevel() {
@@ -2221,19 +2139,13 @@
         return;
       }
 
-      const updatedData = {
-        ...playerData,
-        total_coins: playerData.total_coins - cost,
-        player_level: level + 1
-      };
+      playerData.total_coins -= cost;
+      playerData.player_level = level + 1;
+      updateUser(playerData);
 
-      const result = await window.dataSdk.update(updatedData);
-      if (result.isOk) {
-        showInlineMessage(`🎯 Player upgraded to Level ${level + 1}!`, 'success');
-        sendToBot('upgrade', { type: 'skill', new_level: level + 1 });
-        playerData = updatedData;
-        updateStatsDisplay();
-      }
+      showInlineMessage(`🎯 Player upgraded to Level ${level + 1}!`, 'success');
+      sendToBot('upgrade', { type: 'skill', new_level: level + 1 });
+      updateStatsDisplay();
     }
 
     async function unlockSuperPlayer() {
@@ -2252,20 +2164,14 @@
         return;
       }
 
-      const updatedData = {
-        ...playerData,
-        total_coins: playerData.total_coins - SUPER_PLAYER_COST,
-        super_player_unlocked: true
-      };
+      playerData.total_coins -= SUPER_PLAYER_COST;
+      playerData.super_player_unlocked = true;
+      updateUser(playerData);
 
-      const result = await window.dataSdk.update(updatedData);
-      if (result.isOk) {
-        showInlineMessage('⭐ Super Player unlocked!', 'success');
-        document.getElementById('super-locked').classList.remove('hidden');
-        sendToBot('upgrade', { type: 'super_player' });
-        playerData = updatedData;
-        updateStatsDisplay();
-      }
+      showInlineMessage('⭐ Super Player unlocked!', 'success');
+      document.getElementById('super-locked').classList.remove('hidden');
+      sendToBot('upgrade', { type: 'super_player' });
+      updateStatsDisplay();
     }
 
     // -------------------- Wallet & Withdraw --------------------
@@ -2279,20 +2185,14 @@
         return;
       }
 
-      const updatedData = {
-        ...playerData,
-        wallet_address: address
-      };
+      playerData.wallet_address = address;
+      updateUser(playerData);
 
-      const result = await window.dataSdk.update(updatedData);
-      if (result.isOk) {
-        document.getElementById('wallet-status').textContent = '✅ Wallet connected';
-        document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
-        document.getElementById('btn-withdraw').disabled = false;
-        showInlineMessage('Wallet address saved!', 'success');
-        sendToBot('wallet_saved', { address });
-        playerData = updatedData;
-      }
+      document.getElementById('wallet-status').textContent = '✅ Wallet connected';
+      document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
+      document.getElementById('btn-withdraw').disabled = false;
+      showInlineMessage('Wallet address saved!', 'success');
+      sendToBot('wallet_saved', { address });
     }
 
     function showWithdrawModal() {
@@ -2339,31 +2239,22 @@
         return;
       }
 
-      const updatedData = {
-        ...playerData,
-        total_coins: balance - amount - fee
-      };
+      playerData.total_coins = balance - amount - fee;
+      updateUser(playerData);
 
-      const result = await window.dataSdk.update(updatedData);
+      msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
+      msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours.`;
 
-      if (result.isOk) {
-        msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
-        msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours.`;
+      sendToBot('withdraw_request', {
+        amount,
+        address: playerData.wallet_address,
+        fee
+      });
 
-        sendToBot('withdraw_request', {
-          amount,
-          address: playerData.wallet_address,
-          fee
-        });
-
-        setTimeout(() => {
-          closeWithdrawModal();
-          showScreen('menu-screen');
-        }, 3000);
-      } else {
-        msgEl.className = 'mt-4 p-3 rounded-lg bg-red-500/20 text-red-400';
-        msgEl.textContent = '❌ Withdrawal failed. Please try again.';
-      }
+      setTimeout(() => {
+        closeWithdrawModal();
+        showScreen('menu-screen');
+      }, 3000);
     }
 
     // -------------------- Referral Functions --------------------
@@ -2402,7 +2293,8 @@
 
       const inputCode = document.getElementById('referral-code-input').value.trim().toUpperCase();
 
-      if (!inputCode || inputCode.length !== 11 || !inputCode.startsWith('TON')) {
+      // In our system, referral codes are just user IDs (numeric)
+      if (!inputCode || inputCode.length < 5) {
         showInlineMessage('❌ Invalid code format!', 'error');
         return;
       }
@@ -2412,7 +2304,7 @@
         return;
       }
 
-      const referrer = allPlayersData.find(p => p.referral_code === inputCode);
+      const referrer = getUserById(inputCode);
 
       if (!referrer) {
         showInlineMessage('❌ Code not found!', 'error');
@@ -2422,36 +2314,26 @@
       const bonusEnergy = 30;
       const newEnergy = Math.min(gameState.maxEnergy, (playerData.player_energy || MAX_ENERGY) + bonusEnergy);
 
-      const updatedPlayer = {
-        ...playerData,
-        referred_by: inputCode,
-        player_energy: newEnergy
-      };
+      // Update current user
+      playerData.referred_by = inputCode;
+      playerData.player_energy = newEnergy;
+      updateUser(playerData);
 
-      const updatedReferrer = {
-        ...referrer,
-        referral_count: (referrer.referral_count || 0) + 1,
-        referral_earnings: (referrer.referral_earnings || 0) + REFERRAL_REWARD,
-        total_coins: (referrer.total_coins || 0) + REFERRAL_REWARD
-      };
+      // Update referrer
+      referrer.referral_count = (referrer.referral_count || 0) + 1;
+      referrer.referral_earnings = (referrer.referral_earnings || 0) + REFERRAL_REWARD;
+      referrer.total_coins = (referrer.total_coins || 0) + REFERRAL_REWARD;
+      updateUser(referrer);
 
-      const result1 = await window.dataSdk.update(updatedPlayer);
-      const result2 = await window.dataSdk.update(updatedReferrer);
-
-      if (result1.isOk && result2.isOk) {
-        showInlineMessage(`✅ Code applied! +${bonusEnergy} Energy bonus!`, 'success');
-        document.getElementById('referral-code-input').value = '';
-        sendToBot('referral_used', {
-          referrer_code: inputCode,
-          referrer_id: referrer.id,
-          bonus_energy: bonusEnergy,
-          reward: REFERRAL_REWARD
-        });
-        playerData = updatedPlayer;
-        updateStatsDisplay();
-      } else {
-        showInlineMessage('❌ Failed to apply code', 'error');
-      }
+      showInlineMessage(`✅ Code applied! +${bonusEnergy} Energy bonus!`, 'success');
+      document.getElementById('referral-code-input').value = '';
+      sendToBot('referral_used', {
+        referrer_code: inputCode,
+        referrer_id: referrer.id,
+        bonus_energy: bonusEnergy,
+        reward: REFERRAL_REWARD
+      });
+      updateStatsDisplay();
     }
 
     // -------------------- Utility --------------------
@@ -2657,15 +2539,13 @@
     }
 
     // -------------------- Start --------------------
-    // Ensure all initializations happen after DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
       initSDK().then(() => {
         initControls();
         updateUI();
-        // Optionally, if playerData is still null, show loading message
-        if (!playerData) {
-          showInlineMessage('Loading player data...', 'info');
-        }
+        updateStatsDisplay();
+        updateLeaderboard();
+        updateReferralDisplay();
       });
     });
   </script>
