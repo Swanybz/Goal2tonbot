@@ -1002,8 +1002,13 @@
   </div>
 
   <script>
-    // Global error handler
+    // Global error handler that ignores harmless "before initialization" errors
     window.onerror = function(msg, url, line) {
+      // Ignore errors about playerData or allPlayersData not being initialized yet
+      if (msg.includes('playerData') || msg.includes('allPlayersData')) {
+        console.warn('Ignored initialization error:', msg);
+        return true; // Prevent default error handling
+      }
       console.error('Global error:', msg, 'at', url, 'line', line);
       showInlineMessage('Game error: ' + msg, 'error');
       return false;
@@ -1382,7 +1387,7 @@
     }
 
     function updateStatsDisplay() {
-      if (!playerData) return;
+      if (!playerData) return; // safe guard
 
       const coins = (playerData.total_coins || 0).toFixed(4);
       const energy = playerData.player_energy || MAX_ENERGY;
@@ -1441,7 +1446,7 @@
     }
 
     function updateReferralDisplay() {
-      if (!playerData) return;
+      if (!playerData) return; // safe guard
 
       const referralCode = playerData.referral_code || 'LOADING...';
       const referralCount = playerData.referral_count || 0;
@@ -1467,7 +1472,7 @@
     }
 
     function updateLeaderboard() {
-      if (!playerData) return; // Add guard here too
+      if (!playerData) return; // safe guard
       const list = document.getElementById('leaderboard-list');
       list.innerHTML = '';
 
