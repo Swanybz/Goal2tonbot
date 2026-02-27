@@ -558,7 +558,14 @@
      </div>
     </div>
    </div>
-   <div class="space-y-3 w-full max-w-sm mb-4"><button onclick="checkAndStartGame()" id="play-btn" class="btn-3d w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-xl uppercase tracking-wider"> ⚽ Play Match </button> <button onclick="showScreen('referral-screen')" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 rounded-xl font-semibold transition-all pulse-animation"> 👥 Invite Friends (+0.0010 TON) </button> <button onclick="showScreen('upgrade-screen')" class="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 rounded-xl font-semibold transition-all"> ⚡ Upgrade Players </button> <button onclick="showScreen('leaderboard-screen')" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 rounded-xl font-semibold transition-all"> 🏆 Leaderboard </button> <button onclick="showScreen('wallet-screen')" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-semibold transition-all"> 💰 TON Wallet </button>
+   <div class="space-y-3 w-full max-w-sm mb-4">
+    <button onclick="checkAndStartGame()" id="play-btn" class="btn-3d w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-xl uppercase tracking-wider"> ⚽ Play Match </button>
+    <button onclick="showScreen('referral-screen')" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 rounded-xl font-semibold transition-all pulse-animation"> 👥 Invite Friends (+0.0010 TON) </button>
+    <button onclick="showScreen('upgrade-screen')" class="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 rounded-xl font-semibold transition-all"> ⚡ Upgrade Players </button>
+    <button onclick="showScreen('leaderboard-screen')" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 rounded-xl font-semibold transition-all"> 🏆 Leaderboard </button>
+    <button onclick="showScreen('wallet-screen')" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-semibold transition-all"> 💰 TON Wallet </button>
+    <!-- New Music Toggle Button -->
+    <button onclick="toggleMusic()" id="music-toggle-btn" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl font-semibold transition-all"> 🎵 Music: ON </button>
    </div>
    <div class="text-center text-xs text-gray-500">
     <p>📺 Watch ads: <span id="menu-ads">0</span>/10 for bonus</p>
@@ -1004,20 +1011,6 @@
    </div>
   </div>
 
-  <!-- Audio elements for sound effects -->
-  <audio id="goal-sound" preload="auto" style="display:none">
-    <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
-  </audio>
-  <audio id="kick-sound" preload="auto" style="display:none">
-    <source src="https://www.soundjay.com/misc/sounds/kick-01.mp3" type="audio/mpeg">
-  </audio>
-  <audio id="pass-sound" preload="auto" style="display:none">
-    <source src="https://www.soundjay.com/misc/sounds/button-09.mp3" type="audio/mpeg">
-  </audio>
-  <audio id="whistle-sound" preload="auto" style="display:none">
-    <source src="https://www.soundjay.com/misc/sounds/referee-whistle-01.mp3" type="audio/mpeg">
-  </audio>
-
   <script>
     // Global error handler
     window.onerror = function(msg, url, line) {
@@ -1025,46 +1018,152 @@
       return true;
     };
 
-    // -------------------- Utility functions --------------------
-    function playSound(id) {
-      try {
-        const audio = document.getElementById(id);
-        if (audio) audio.play().catch(e => console.log('Audio play failed', e));
-      } catch(e) {}
+    // -------------------- Sound System with Web Audio API --------------------
+    let audioCtx = null;
+    let musicInterval = null;
+    let musicEnabled = true; // default on
+
+    function initAudio() {
+      if (!audioCtx) {
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) {
+          console.warn('Web Audio API not supported');
+        }
+      }
+    }
+
+    function playSound(type) {
+      if (!audioCtx) initAudio();
+      if (!audioCtx) return;
+      // Resume if suspended
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      switch(type) {
+        case 'kick':
+          // thump from 200Hz to 100Hz in 0.1s
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+          gain.gain.setValueAtTime(1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.stop(now + 0.1);
+          break;
+        case 'pass':
+          // whoosh 400Hz to 300Hz in 0.08s
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+          gain.gain.setValueAtTime(0.8, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.stop(now + 0.08);
+          break;
+        case 'goal':
+          // ascending jingle: 440,540,640,740,840 each 0.3s
+          let times = [0, 0.3, 0.6, 0.9, 1.2];
+          let freqs = [440, 540, 640, 740, 840];
+          times.forEach((t, i) => {
+            osc.frequency.setValueAtTime(freqs[i], now + t);
+          });
+          gain.gain.setValueAtTime(0.7, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+          osc.stop(now + 1.5);
+          break;
+        case 'whistle':
+          // sharp rising peep: 800Hz to 1200Hz after 0.15s, fade out 0.3s
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.linearRampToValueAtTime(1200, now + 0.15);
+          gain.gain.setValueAtTime(1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.stop(now + 0.3);
+          break;
+        case 'coin':
+          // bright ching 800Hz to 1200Hz in 0.1s
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+          gain.gain.setValueAtTime(0.8, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.stop(now + 0.1);
+          break;
+        default: return;
+      }
+      osc.start(now);
+    }
+
+    function playBackgroundMusic() {
+      if (!musicEnabled) return;
+      if (!audioCtx) initAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      // C major scale: C4=261.63, D4=293.66, E4=329.63, F4=349.23, G4=392.00, A4=440.00, B4=493.88, C5=523.25
+      const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+      let index = 0;
+
+      function playNext() {
+        if (!musicEnabled) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = notes[index % notes.length];
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+        index++;
+      }
+
+      // Clear any existing interval
+      if (musicInterval) clearInterval(musicInterval);
+      musicInterval = setInterval(playNext, 600); // 0.6s between notes
+    }
+
+    function toggleMusic() {
+      musicEnabled = !musicEnabled;
+      const btn = document.getElementById('music-toggle-btn');
+      if (btn) btn.textContent = musicEnabled ? '🎵 Music: ON' : '🎵 Music: OFF';
+      if (musicEnabled) {
+        playBackgroundMusic();
+      } else {
+        if (musicInterval) {
+          clearInterval(musicInterval);
+          musicInterval = null;
+        }
+      }
     }
 
     // -------------------- LocalStorage based data persistence --------------------
     const STORAGE_KEY_USERS = 'ton_football_users';
     const STORAGE_KEY_CURRENT_USER = 'ton_football_current_user';
 
-    // Load all users from localStorage
     function loadAllUsers() {
       const data = localStorage.getItem(STORAGE_KEY_USERS);
       return data ? JSON.parse(data) : [];
     }
 
-    // Save all users
     function saveAllUsers(users) {
       localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
     }
 
-    // Load current user ID
     function getCurrentUserId() {
       return localStorage.getItem(STORAGE_KEY_CURRENT_USER);
     }
 
-    // Set current user ID
     function setCurrentUserId(id) {
       localStorage.setItem(STORAGE_KEY_CURRENT_USER, id);
     }
 
-    // Get user by ID
     function getUserById(id) {
       const users = loadAllUsers();
       return users.find(u => u.id === id) || null;
     }
 
-    // Update or create user
     function updateUser(userData) {
       const users = loadAllUsers();
       const index = users.findIndex(u => u.id === userData.id);
@@ -1074,7 +1173,6 @@
         users.push(userData);
       }
       saveAllUsers(users);
-      // If this is current user, also update in-memory playerData
       if (userData.id === getCurrentUserId()) {
         playerData = userData;
         updateStatsDisplay();
@@ -1090,22 +1188,18 @@
       tg.expand();
     }
 
-    // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const BJS_WEBHOOK = urlParams.get('webhook');
-    const REFERRER_PARAM = urlParams.get('start'); // e.g., "7877592985"
-    const JOINED_PARAM = urlParams.get('joined');  // "1" if bot verified channel
+    const REFERRER_PARAM = urlParams.get('start');
+    const JOINED_PARAM = urlParams.get('joined');
 
-    // Determine user ID
     let currentUserId = getCurrentUserId();
     if (!currentUserId) {
-      // Generate a new user ID (use telegram ID if available, else random)
       const tgUser = tg?.initDataUnsafe?.user;
       currentUserId = tgUser?.id ? String(tgUser.id) : 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       setCurrentUserId(currentUserId);
     }
 
-    // Load current user data (or create default)
     let playerData = getUserById(currentUserId);
     if (!playerData) {
       playerData = {
@@ -1124,7 +1218,7 @@
         player_energy: 100,
         player_level: 1,
         super_player_unlocked: false,
-        referral_code: currentUserId, // Use user ID as referral code
+        referral_code: currentUserId,
         referred_by: '',
         referral_count: 0,
         referral_earnings: 0,
@@ -1135,29 +1229,23 @@
       updateUser(playerData);
     }
 
-    // Handle channel join parameter from bot
     if (JOINED_PARAM === '1') {
       playerData.joined_channel = true;
       updateUser(playerData);
     }
 
-    // Handle referral if present
     if (REFERRER_PARAM && REFERRER_PARAM !== playerData.id && !playerData.referred_by) {
-      // Check if referrer exists in our users list
       const referrer = getUserById(REFERRER_PARAM);
       if (referrer) {
-        // Award bonus to current user
         playerData.player_energy = Math.min(150, (playerData.player_energy || 100) + 30);
         playerData.referred_by = REFERRER_PARAM;
         updateUser(playerData);
 
-        // Update referrer's stats
         referrer.referral_count = (referrer.referral_count || 0) + 1;
         referrer.referral_earnings = (referrer.referral_earnings || 0) + 0.0010;
         referrer.total_coins = (referrer.total_coins || 0) + 0.0010;
         updateUser(referrer);
 
-        // Send webhook events
         sendToBot('referral_used', {
           referrer_id: REFERRER_PARAM,
           bonus_energy: 30,
@@ -1165,13 +1253,9 @@
         });
 
         showInlineMessage('Referral bonus applied! +30 Energy', 'success');
-      } else {
-        // Referrer not found in local storage (maybe new user, we can still record)
-        // For now, just ignore
       }
     }
 
-    // -------------------- Webhook sender --------------------
     async function sendToBot(eventType, data = {}) {
       if (!BJS_WEBHOOK) return null;
       const payload = {
@@ -1188,12 +1272,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (response.ok) {
-          return await response.json();
-        }
-      } catch (e) {
-        console.warn('Webhook send failed', e);
-      }
+        if (response.ok) return await response.json();
+      } catch (e) { console.warn('Webhook send failed', e); }
       return null;
     }
 
@@ -1207,9 +1287,7 @@
 
     async function verifyChannelJoin() {
       showInlineMessage('Verifying...', 'info');
-      // Send verify_channel event to webhook
       const response = await sendToBot('verify_channel', {});
-      // If bot responds with joined:true, update status
       if (response && response.joined === true) {
         joinedChannel = true;
         playerData.joined_channel = true;
@@ -1268,7 +1346,6 @@
     let animationFrameId = null;
     let adCanceled = false;
 
-    // -------------------- Initialize SDK & Data (if any) --------------------
     async function initSDK() {
       if (window.elementSdk) {
         await window.elementSdk.init({
@@ -1289,11 +1366,6 @@
           ])
         });
       }
-
-      if (window.dataSdk) {
-        // If dataSdk exists, we could sync, but we'll rely on localStorage for now.
-        // We'll just ignore and use localStorage.
-      }
     }
 
     function updateUI() {
@@ -1303,7 +1375,6 @@
 
     function updateStatsDisplay() {
       if (!playerData) return;
-
       const coins = (playerData.total_coins || 0).toFixed(4);
       const energy = playerData.player_energy || MAX_ENERGY;
       const maxEnergy = playerData.player_level >= 2 ? 150 : MAX_ENERGY;
@@ -1345,11 +1416,8 @@
       const canPlay = energy >= ENERGY_COST_PER_MATCH && joinedChannel;
       const playBtn = document.getElementById('play-btn');
       if (!canPlay) {
-        if (!joinedChannel) {
-          playBtn.textContent = '🔒 Join Channel to Play';
-        } else {
-          playBtn.textContent = '⚡ Low Energy - Watch Ad';
-        }
+        if (!joinedChannel) playBtn.textContent = '🔒 Join Channel to Play';
+        else playBtn.textContent = '⚡ Low Energy - Watch Ad';
         playBtn.classList.add('opacity-75');
       } else {
         playBtn.textContent = '⚽ Play Match';
@@ -1362,7 +1430,6 @@
 
     function updateReferralDisplay() {
       if (!playerData) return;
-
       const referralCode = playerData.referral_code || 'LOADING...';
       const referralCount = playerData.referral_count || 0;
       const referralEarnings = (playerData.referral_earnings || 0).toFixed(4);
@@ -1432,32 +1499,21 @@
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
-
-      if (screenId === 'leaderboard-screen') {
-        updateLeaderboard();
-      } else if (screenId === 'referral-screen') {
-        updateReferralDisplay();
-      }
+      if (screenId === 'leaderboard-screen') updateLeaderboard();
+      else if (screenId === 'referral-screen') updateReferralDisplay();
     }
 
-    // -------------------- Game Functions --------------------
     async function checkAndStartGame() {
-      if (!playerData) {
-        showInlineMessage('Loading player data... Please wait.', 'info');
-        return;
-      }
-
+      if (!playerData) { showInlineMessage('Loading player data... Please wait.', 'info'); return; }
       if (!joinedChannel) {
         showInlineMessage('Please join our Telegram channel first!', 'warning');
         document.getElementById('join-channel-banner').classList.remove('hidden');
         return;
       }
-
       if (gameState.energy < ENERGY_COST_PER_MATCH) {
         showInlineMessage('Not enough energy! Watch an ad or upgrade energy.', 'warning');
         return;
       }
-
       startGame();
     }
 
@@ -1476,7 +1532,6 @@
           maxEnergy: gameState.maxEnergy
         };
 
-        // Randomize user team color
         const userHue = Math.floor(Math.random() * 360);
         setTimeout(() => {
           document.querySelectorAll('.player.user').forEach(el => {
@@ -1488,7 +1543,7 @@
         initializePlayers();
         resetBall();
         updateGameHUD();
-        playSound('whistle-sound');
+        playSound('whistle'); // kick-off whistle
 
         lastTime = performance.now();
         animationFrameId = requestAnimationFrame(gameLoop);
@@ -1497,10 +1552,7 @@
           if (gameState.isPlaying && gameState.timeRemaining > 0) {
             gameState.timeRemaining -= 1;
             updateGameHUD();
-
-            if (gameState.timeRemaining <= 0) {
-              endGame();
-            }
+            if (gameState.timeRemaining <= 0) endGame();
           }
         }, 1000);
       } catch (error) {
@@ -1565,10 +1617,7 @@
       let nearestDist = Infinity;
       userPlayers.forEach((p, i) => {
         const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
-        if (dist < nearestDist) {
-          nearestDist = dist;
-          nearestIdx = i;
-        }
+        if (dist < nearestDist) { nearestDist = dist; nearestIdx = i; }
       });
       selectPlayer(nearestIdx, 'user');
     }
@@ -1584,11 +1633,7 @@
     }
 
     function gameLoop(timestamp) {
-      if (!gameState.isPlaying) {
-        animationFrameId = null;
-        return;
-      }
-
+      if (!gameState.isPlaying) { animationFrameId = null; return; }
       const delta = Math.min((timestamp - lastTime) / 1000, 0.1);
       lastTime = timestamp;
 
@@ -1596,18 +1641,14 @@
         const player = userPlayers[gameState.selectedPlayer];
         const baseSpeed = player.isSuper ? 2.5 : 1.2;
         const speed = buttonStates.sprint ? baseSpeed * 1.5 : baseSpeed;
-
         player.x += joystickDirection.x * speed;
         player.y += joystickDirection.y * speed;
         player.x = Math.max(2, Math.min(98, player.x));
         player.y = Math.max(2, Math.min(98, player.y));
         player.el.style.left = player.x + '%';
         player.el.style.top = player.y + '%';
-
         const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
-        if (distToBall < 5 && gameState.ballPossession !== 'user') {
-          gameState.ballPossession = 'user';
-        }
+        if (distToBall < 5 && gameState.ballPossession !== 'user') gameState.ballPossession = 'user';
       }
 
       if (gameState.ballPossession === 'user' && gameState.selectedPlayer !== null) {
@@ -1620,37 +1661,18 @@
         ball.x += (aiAttacker.x - ball.x) * 0.2;
         ball.y += (aiAttacker.y + 5 - ball.y) * 0.2;
       } else {
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-        ball.vx *= 0.96;
-        ball.vy *= 0.96;
-
+        ball.x += ball.vx; ball.y += ball.vy; ball.vx *= 0.96; ball.vy *= 0.96;
         if (Math.abs(ball.vx) < 0.05 && Math.abs(ball.vy) < 0.05) {
-          ball.vx = 0;
-          ball.vy = 0;
-
-          let nearestDist = Infinity;
-          let nearestTeam = null;
+          ball.vx = 0; ball.vy = 0;
+          let nearestDist = Infinity, nearestTeam = null;
           [...userPlayers, ...aiPlayers].forEach((p, i) => {
             const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
-            if (dist < nearestDist) {
-              nearestDist = dist;
-              nearestTeam = i < userPlayers.length ? 'user' : 'ai';
-            }
+            if (dist < nearestDist) { nearestDist = dist; nearestTeam = i < userPlayers.length ? 'user' : 'ai'; }
           });
-
           if (nearestDist < 15) gameState.ballPossession = nearestTeam;
         }
-
-        if (ball.x < 2 || ball.x > 98) {
-          ball.vx *= -0.7;
-          ball.x = Math.max(2, Math.min(98, ball.x));
-        }
-        if ((ball.y < 2 || ball.y > 98) && (ball.x < 35 || ball.x > 65)) {
-          ball.vy *= -0.7;
-          ball.y = Math.max(2, Math.min(98, ball.y));
-        }
-
+        if (ball.x < 2 || ball.x > 98) { ball.vx *= -0.7; ball.x = Math.max(2, Math.min(98, ball.x)); }
+        if ((ball.y < 2 || ball.y > 98) && (ball.x < 35 || ball.x > 65)) { ball.vy *= -0.7; ball.y = Math.max(2, Math.min(98, ball.y)); }
         [...userPlayers, ...aiPlayers].forEach((p, i) => {
           const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
           if (dist < 4) {
@@ -1664,56 +1686,31 @@
       updateAI();
       updateUserTeam();
       updateBallPosition();
-
       animationFrameId = requestAnimationFrame(gameLoop);
     }
 
     function updateUserTeam() {
       userPlayers.forEach((player, i) => {
         if (i === gameState.selectedPlayer) return;
-
-        let targetX = player.homeX;
-        let targetY = player.homeY;
-
+        let targetX = player.homeX, targetY = player.homeY;
         if (gameState.ballPossession === 'user') {
-          if (i === 9) {
-            targetX = 50 + (Math.random() - 0.5) * 30;
-            targetY = 15 + Math.random() * 10;
-          } else if (i === 8 || i === 10) {
-            targetX = i === 8 ? 25 : 75;
-            targetY = 25 + Math.random() * 15;
-          } else if (i >= 5 && i <= 7) {
-            targetY = ball.y - 15;
-            targetX = player.homeX + (Math.random() - 0.5) * 20;
-          } else if (i >= 1 && i <= 4) {
-            targetY = 60;
-          }
+          if (i === 9) { targetX = 50 + (Math.random() - 0.5) * 30; targetY = 15 + Math.random() * 10; }
+          else if (i === 8 || i === 10) { targetX = i === 8 ? 25 : 75; targetY = 25 + Math.random() * 15; }
+          else if (i >= 5 && i <= 7) { targetY = ball.y - 15; targetX = player.homeX + (Math.random() - 0.5) * 20; }
+          else if (i >= 1 && i <= 4) targetY = 60;
         } else if (gameState.ballPossession === 'ai') {
           const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
-          if (i === 0) {
-            targetX = Math.max(35, Math.min(65, ball.x));
-            targetY = 92;
-          } else if (distToBall < 35) {
-            targetX = ball.x + (Math.random() - 0.5) * 10;
-            targetY = ball.y + (Math.random() - 0.5) * 10;
-          } else {
-            targetY = Math.min(player.homeY, 70);
-          }
+          if (i === 0) { targetX = Math.max(35, Math.min(65, ball.x)); targetY = 92; }
+          else if (distToBall < 35) { targetX = ball.x + (Math.random() - 0.5) * 10; targetY = ball.y + (Math.random() - 0.5) * 10; }
+          else targetY = Math.min(player.homeY, 70);
         } else {
           const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
-          if (distToBall < 30) {
-            targetX = ball.x;
-            targetY = ball.y;
-          }
+          if (distToBall < 30) { targetX = ball.x; targetY = ball.y; }
         }
-
-        const dx = targetX - player.x;
-        const dy = targetY - player.y;
+        const dx = targetX - player.x, dy = targetY - player.y;
         const speedBonus = player.isSuper ? 0.15 : 0;
         const speed = 0.12 + (i >= 8 ? 0.08 : 0) + speedBonus;
-
-        player.x += dx * speed;
-        player.y += dy * speed;
+        player.x += dx * speed; player.y += dy * speed;
         player.x = Math.max(2, Math.min(98, player.x));
         player.y = Math.max(2, Math.min(98, player.y));
         player.el.style.left = player.x + '%';
@@ -1723,119 +1720,65 @@
 
     function updateAI() {
       aiPlayers.forEach((player, i) => {
-        let targetX = player.homeX;
-        let targetY = player.homeY;
-
+        let targetX = player.homeX, targetY = player.homeY;
         if (gameState.ballPossession === 'ai') {
-          if (i === 9) {
-            targetX = ball.x + (Math.random() - 0.5) * 15;
-            targetY = Math.min(ball.y + 12, 85);
-          } else if (i >= 8) {
-            targetX = ball.x + (i === 8 ? -25 : 25);
-            targetY = ball.y + 8;
-          } else if (i >= 5) {
-            targetY = ball.y + 5;
-          }
+          if (i === 9) { targetX = ball.x + (Math.random() - 0.5) * 15; targetY = Math.min(ball.y + 12, 85); }
+          else if (i >= 8) { targetX = ball.x + (i === 8 ? -25 : 25); targetY = ball.y + 8; }
+          else if (i >= 5) targetY = ball.y + 5;
         } else if (gameState.ballPossession === 'user') {
-          if (i === 0) {
-            targetX = Math.max(35, Math.min(65, ball.x));
-            targetY = 8;
-          } else if (i >= 1 && i <= 4) {
-            targetY = Math.max(15, Math.min(30, ball.y - 20));
-            targetX = player.homeX + (Math.random() - 0.5) * 15;
-          } else {
+          if (i === 0) { targetX = Math.max(35, Math.min(65, ball.x)); targetY = 8; }
+          else if (i >= 1 && i <= 4) { targetY = Math.max(15, Math.min(30, ball.y - 20)); targetX = player.homeX + (Math.random() - 0.5) * 15; }
+          else {
             const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
-            if (distToBall < 25) {
-              targetX = ball.x + (Math.random() - 0.5) * 15;
-              targetY = ball.y - 10;
-            }
+            if (distToBall < 25) { targetX = ball.x + (Math.random() - 0.5) * 15; targetY = ball.y - 10; }
           }
         } else {
           const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
-          if (distToBall < 20 && i !== 0) {
-            targetX = ball.x;
-            targetY = ball.y;
-          }
+          if (distToBall < 20 && i !== 0) { targetX = ball.x; targetY = ball.y; }
         }
-
-        const dx = targetX - player.x;
-        const dy = targetY - player.y;
-        const baseSpeed = 0.08;
-        const speed = baseSpeed + (i >= 8 ? 0.05 : 0);
-
-        player.x += dx * speed;
-        player.y += dy * speed;
+        const dx = targetX - player.x, dy = targetY - player.y;
+        const baseSpeed = 0.08, speed = baseSpeed + (i >= 8 ? 0.05 : 0);
+        player.x += dx * speed; player.y += dy * speed;
         player.x = Math.max(2, Math.min(98, player.x));
         player.y = Math.max(2, Math.min(98, player.y));
         player.el.style.left = player.x + '%';
         player.el.style.top = player.y + '%';
-
         const distToBall = Math.hypot(player.x - ball.x, player.y - ball.y);
-        if (gameState.ballPossession === 'user' && distToBall < 4 && Math.random() < 0.008) {
-          gameState.ballPossession = 'ai';
-        }
-
+        if (gameState.ballPossession === 'user' && distToBall < 4 && Math.random() < 0.008) gameState.ballPossession = 'ai';
         if (gameState.ballPossession === 'ai' && i === 9) {
           const inShootingRange = player.y > 75 && player.x > 35 && player.x < 65;
-          if (inShootingRange && Math.random() < 0.005) {
-            shootBall('ai');
-          }
+          if (inShootingRange && Math.random() < 0.005) shootBall('ai');
         }
       });
     }
 
     function checkGoals() {
       if (ball.y < 3 && ball.x > 35 && ball.x < 65) {
-        if (Math.abs(ball.vy) > 0.5 || (gameState.ballPossession === 'user' && ball.vy < -0.2)) {
-          scoreGoal('user');
-          return;
-        }
+        if (Math.abs(ball.vy) > 0.5 || (gameState.ballPossession === 'user' && ball.vy < -0.2)) { scoreGoal('user'); return; }
       }
-
       if (ball.y > 97 && ball.x > 35 && ball.x < 65) {
-        if (Math.abs(ball.vy) > 1.2 || (gameState.ballPossession === 'ai' && ball.vy > 0.8)) {
-          scoreGoal('ai');
-          return;
-        }
+        if (Math.abs(ball.vy) > 1.2 || (gameState.ballPossession === 'ai' && ball.vy > 0.8)) { scoreGoal('ai'); return; }
       }
-
       if ((ball.y < 5 || ball.y > 95) && ball.x > 35 && ball.x < 65) {
-        if (Math.abs(ball.vx) < 0.5 && Math.abs(ball.vy) < 1.0) {
-          ball.vx = 0;
-          ball.vy = 0;
-        }
+        if (Math.abs(ball.vx) < 0.5 && Math.abs(ball.vy) < 1.0) { ball.vx = 0; ball.vy = 0; }
       }
     }
 
     function scoreGoal(team) {
       gameState.isPlaying = false;
-
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-
+      if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
       showVARReview(() => {
         if (team === 'user') {
-          gameState.userScore++;
-          gameState.goalsThisMatch++;
-          gameState.coinsEarned += GOAL_REWARD;
-
-          sendToBot('goal_scored', {
-            match_id: Date.now(),
-            goal_number: gameState.goalsThisMatch,
-            coins_earned: GOAL_REWARD
-          });
-
+          gameState.userScore++; gameState.goalsThisMatch++; gameState.coinsEarned += GOAL_REWARD;
+          sendToBot('goal_scored', { match_id: Date.now(), goal_number: gameState.goalsThisMatch, coins_earned: GOAL_REWARD });
           document.getElementById('goal-reward').textContent = GOAL_REWARD.toFixed(4);
-          playSound('goal-sound');
+          playSound('goal'); // goal celebration sound
           showCelebration();
         } else {
           gameState.aiScore++;
+          playSound('whistle'); // opponent scores – whistle
         }
-
         updateGameHUD();
-
         setTimeout(() => {
           initializePlayers();
           resetBall();
@@ -1843,6 +1786,7 @@
           gameState.isPlaying = true;
           lastTime = performance.now();
           animationFrameId = requestAnimationFrame(gameLoop);
+          playSound('whistle'); // restart whistle
         }, team === 'user' ? 3000 : 1500);
       });
     }
@@ -1850,20 +1794,14 @@
     function showVARReview(callback) {
       const overlay = document.getElementById('var-overlay');
       overlay.classList.add('active');
-
-      setTimeout(() => {
-        overlay.classList.remove('active');
-        callback();
-      }, 2000);
+      setTimeout(() => { overlay.classList.remove('active'); callback(); }, 2000);
     }
 
     function showCelebration() {
       const overlay = document.getElementById('celebration-overlay');
       overlay.classList.add('active');
-
       const container = document.getElementById('confetti-container');
       container.innerHTML = '';
-
       const colors = ['#ffcc00', '#00ccff', '#ff6600', '#00ff66', '#ff00ff'];
       for (let i = 0; i < 50; i++) {
         const confetti = document.createElement('div');
@@ -1875,76 +1813,50 @@
         confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
         container.appendChild(confetti);
       }
-
       setTimeout(() => overlay.classList.remove('active'), 2500);
     }
 
     function shootBall(team) {
       gameState.ballPossession = 'none';
-      playSound('kick-sound');
-
+      playSound('kick'); // kick sound
       if (team === 'user') {
         const currentPlayer = userPlayers[gameState.selectedPlayer];
         const accuracyBonus = currentPlayer.isSuper ? 10 : (playerData?.player_level || 1) * 2;
         const aimX = 50 + (Math.random() - 0.5) * (20 - accuracyBonus);
         const dx = (aimX - currentPlayer.x) * 0.15;
         const powerBonus = currentPlayer.isSuper ? 3 : 0;
-
-        ball.vx = dx;
-        ball.vy = -12 - powerBonus;
+        ball.vx = dx; ball.vy = -12 - powerBonus;
       } else {
         const aimX = 50 + (Math.random() - 0.5) * 25;
         const aiAttacker = aiPlayers[9];
         const dx = (aimX - aiAttacker.x) * 0.1;
-
-        ball.vx = dx;
-        ball.vy = 8;
+        ball.vx = dx; ball.vy = 8;
       }
     }
 
     function passBall() {
       if (gameState.ballPossession !== 'user') return;
-      playSound('pass-sound');
-
-      let nearestIdx = -1;
-      let nearestDist = Infinity;
+      playSound('pass'); // pass sound
+      let nearestIdx = -1, nearestDist = Infinity;
       const currentPlayer = userPlayers[gameState.selectedPlayer];
-
       const passDirection = { x: joystickDirection.x, y: joystickDirection.y };
       const hasPressDirection = Math.abs(passDirection.x) > 0.1 || Math.abs(passDirection.y) > 0.1;
-
       userPlayers.forEach((p, i) => {
         if (i === gameState.selectedPlayer) return;
-
-        const dx = p.x - currentPlayer.x;
-        const dy = p.y - currentPlayer.y;
-        const dist = Math.hypot(dx, dy);
-
+        const dx = p.x - currentPlayer.x, dy = p.y - currentPlayer.y, dist = Math.hypot(dx, dy);
         if (hasPressDirection) {
           const dotProduct = (dx * passDirection.x + dy * passDirection.y) / dist;
-          if (dotProduct > 0.5 && dist < 50 && dist < nearestDist) {
-            nearestDist = dist;
-            nearestIdx = i;
-          }
+          if (dotProduct > 0.5 && dist < 50 && dist < nearestDist) { nearestDist = dist; nearestIdx = i; }
         } else {
-          if (dist < nearestDist && dist < 40) {
-            nearestDist = dist;
-            nearestIdx = i;
-          }
+          if (dist < nearestDist && dist < 40) { nearestDist = dist; nearestIdx = i; }
         }
       });
-
       if (nearestIdx >= 0) {
         const target = userPlayers[nearestIdx];
         gameState.ballPossession = 'none';
         ball.vx = (target.x - ball.x) * 0.2;
         ball.vy = (target.y - ball.y) * 0.2;
-
-        setTimeout(() => {
-          if (gameState.ballPossession === 'user') {
-            selectPlayer(nearestIdx, 'user');
-          }
-        }, 300);
+        setTimeout(() => { if (gameState.ballPossession === 'user') selectPlayer(nearestIdx, 'user'); }, 300);
       }
     }
 
@@ -1952,12 +1864,9 @@
       document.getElementById('user-score').textContent = gameState.userScore;
       document.getElementById('ai-score').textContent = gameState.aiScore;
       document.getElementById('game-coins').textContent = gameState.coinsEarned.toFixed(4);
-
       const mins = Math.floor(gameState.timeRemaining / 60);
       const secs = gameState.timeRemaining % 60;
-      document.getElementById('game-timer').textContent = 
-        `${mins}:${secs.toString().padStart(2, '0')}`;
-
+      document.getElementById('game-timer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
       const energyPercent = (gameState.energy / gameState.maxEnergy) * 100;
       document.getElementById('energy-bar').style.width = energyPercent + '%';
       document.getElementById('energy-text').textContent = gameState.energy;
@@ -1966,20 +1875,13 @@
     async function endGame() {
       gameState.isPlaying = false;
       clearInterval(gameTimerInterval);
-
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-
-      let bonusCoins = 0;
-      let result = '';
-
+      if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+      let bonusCoins = 0, result = '';
       if (gameState.userScore > gameState.aiScore) {
-        bonusCoins += WIN_BONUS;
-        result = 'win';
+        bonusCoins += WIN_BONUS; result = 'win';
         document.getElementById('gameover-title').textContent = 'VICTORY! 🏆';
         document.getElementById('goal-title').textContent = 'VICTORY!';
+        playSound('goal'); // victory fanfare
       } else if (gameState.userScore < gameState.aiScore) {
         result = 'loss';
         document.getElementById('gameover-title').textContent = 'DEFEAT 😢';
@@ -1987,36 +1889,21 @@
         result = 'draw';
         document.getElementById('gameover-title').textContent = 'DRAW 🤝';
       }
-
+      playSound('whistle'); // final whistle
       gameState.coinsEarned += bonusCoins;
-
       document.getElementById('final-user-score').textContent = gameState.userScore;
       document.getElementById('final-ai-score').textContent = gameState.aiScore;
       document.getElementById('earned-coins').textContent = gameState.coinsEarned.toFixed(4);
       document.getElementById('match-goals').textContent = gameState.goalsThisMatch;
-
-      if (gameState.energy < ENERGY_COST_PER_MATCH) {
-        document.getElementById('ad-unlock-notice').classList.remove('hidden');
-      } else {
-        document.getElementById('ad-unlock-notice').classList.add('hidden');
-      }
-
+      if (gameState.energy < ENERGY_COST_PER_MATCH) document.getElementById('ad-unlock-notice').classList.remove('hidden');
+      else document.getElementById('ad-unlock-notice').classList.add('hidden');
       document.getElementById('gameover-overlay').classList.add('active');
-
       await saveStats(result);
-
-      sendToBot('match_end', {
-        result,
-        user_score: gameState.userScore,
-        ai_score: gameState.aiScore,
-        coins_earned: gameState.coinsEarned,
-        goals: gameState.goalsThisMatch
-      });
+      sendToBot('match_end', { result, user_score: gameState.userScore, ai_score: gameState.aiScore, coins_earned: gameState.coinsEarned, goals: gameState.goalsThisMatch });
     }
 
     async function saveStats(result) {
       if (!playerData) return;
-
       playerData.total_coins = (playerData.total_coins || 0) + gameState.coinsEarned;
       playerData.goals_scored = (playerData.goals_scored || 0) + gameState.goalsThisMatch;
       playerData.games_played = (playerData.games_played || 0) + 1;
@@ -2026,54 +1913,31 @@
       playerData.high_score = Math.max(playerData.high_score || 0, gameState.userScore);
       playerData.player_energy = gameState.energy;
       playerData.last_played = new Date().toISOString();
-
       updateUser(playerData);
     }
 
-    // -------------------- Ad Reward (Monetag) with Cancel --------------------
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
       document.getElementById('ad-screen').classList.add('active');
       adCanceled = false;
-
-      // Start a fake progress for visual, but rely on Monetag promise
       let timeLeft = AD_DURATION;
       const timerEl = document.getElementById('ad-timer');
       const progressEl = document.getElementById('ad-progress');
-      const messageEl = document.getElementById('ad-message');
-
       const adInterval = setInterval(() => {
-        if (adCanceled) {
-          clearInterval(adInterval);
-          return;
-        }
+        if (adCanceled) { clearInterval(adInterval); return; }
         timeLeft--;
         timerEl.textContent = timeLeft;
         progressEl.style.width = ((AD_DURATION - timeLeft) / AD_DURATION * 100) + '%';
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
-
       if (typeof show_10656450 === 'function') {
         show_10656450('pop').then(() => {
-          if (!adCanceled) {
-            clearInterval(adInterval);
-            completeAdReward();
-          }
+          if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
         }).catch(e => {
-          if (!adCanceled) {
-            clearInterval(adInterval);
-            document.getElementById('ad-screen').classList.remove('active');
-            showInlineMessage('Ad not completed. Try again.', 'warning');
-          }
+          if (!adCanceled) { clearInterval(adInterval); document.getElementById('ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
         });
       } else {
-        // Fallback simulation
-        setTimeout(() => {
-          if (!adCanceled) {
-            clearInterval(adInterval);
-            completeAdReward();
-          }
-        }, AD_DURATION * 1000);
+        setTimeout(() => { if (!adCanceled) { clearInterval(adInterval); completeAdReward(); } }, AD_DURATION * 1000);
       }
     }
 
@@ -2085,44 +1949,27 @@
 
     async function completeAdReward() {
       if (!playerData) return;
-
       const energyRestore = 20;
       const newEnergy = Math.min(gameState.maxEnergy, (playerData.player_energy || MAX_ENERGY) + energyRestore);
-
       playerData.total_coins = (playerData.total_coins || 0) + AD_REWARD;
       playerData.ads_watched = (playerData.ads_watched || 0) + 1;
       playerData.player_energy = newEnergy;
-
       updateUser(playerData);
-
       document.getElementById('ad-screen').classList.remove('active');
       showScreen('menu-screen');
       showInlineMessage(`🎁 +${AD_REWARD.toFixed(4)} TON & +${energyRestore} Energy earned!`, 'success');
+      playSound('coin'); // coin sound for reward
       sendToBot('ad_watched', { reward: AD_REWARD, energy_restore: energyRestore });
     }
 
-    // -------------------- Upgrade Functions --------------------
     async function upgradeEnergy() {
-      if (!playerData) {
-        showInlineMessage('Player data not loaded', 'error');
-        return;
-      }
-
-      if (playerData.total_coins < ENERGY_BOOST_COST) {
-        showInlineMessage('Not enough TON!', 'error');
-        return;
-      }
-
-      if (playerData.player_level >= 2) {
-        showInlineMessage('Already upgraded!', 'warning');
-        return;
-      }
-
+      if (!playerData) { showInlineMessage('Player data not loaded', 'error'); return; }
+      if (playerData.total_coins < ENERGY_BOOST_COST) { showInlineMessage('Not enough TON!', 'error'); return; }
+      if (playerData.player_level >= 2) { showInlineMessage('Already upgraded!', 'warning'); return; }
       playerData.total_coins -= ENERGY_BOOST_COST;
       playerData.player_level = 2;
       playerData.player_energy = 150;
       updateUser(playerData);
-
       showInlineMessage('⚡ Energy upgraded to 150!', 'success');
       document.getElementById('btn-upgrade-energy').textContent = 'Upgraded ✅';
       document.getElementById('btn-upgrade-energy').disabled = true;
@@ -2131,68 +1978,37 @@
     }
 
     async function upgradeLevel() {
-      if (!playerData) {
-        showInlineMessage('Player data not loaded', 'error');
-        return;
-      }
-
+      if (!playerData) { showInlineMessage('Player data not loaded', 'error'); return; }
       const level = playerData.player_level || 1;
       const cost = LEVEL_UP_BASE_COST * level;
-
-      if (playerData.total_coins < cost) {
-        showInlineMessage('Not enough TON!', 'error');
-        return;
-      }
-
+      if (playerData.total_coins < cost) { showInlineMessage('Not enough TON!', 'error'); return; }
       playerData.total_coins -= cost;
       playerData.player_level = level + 1;
       updateUser(playerData);
-
       showInlineMessage(`🎯 Player upgraded to Level ${level + 1}!`, 'success');
       sendToBot('upgrade', { type: 'skill', new_level: level + 1 });
       updateStatsDisplay();
     }
 
     async function unlockSuperPlayer() {
-      if (!playerData) {
-        showInlineMessage('Player data not loaded', 'error');
-        return;
-      }
-
-      if (playerData.super_player_unlocked) {
-        showInlineMessage('Already unlocked!', 'warning');
-        return;
-      }
-
-      if (playerData.total_coins < SUPER_PLAYER_COST) {
-        showInlineMessage('Not enough TON!', 'error');
-        return;
-      }
-
+      if (!playerData) { showInlineMessage('Player data not loaded', 'error'); return; }
+      if (playerData.super_player_unlocked) { showInlineMessage('Already unlocked!', 'warning'); return; }
+      if (playerData.total_coins < SUPER_PLAYER_COST) { showInlineMessage('Not enough TON!', 'error'); return; }
       playerData.total_coins -= SUPER_PLAYER_COST;
       playerData.super_player_unlocked = true;
       updateUser(playerData);
-
       showInlineMessage('⭐ Super Player unlocked!', 'success');
       document.getElementById('super-locked').classList.remove('hidden');
       sendToBot('upgrade', { type: 'super_player' });
       updateStatsDisplay();
     }
 
-    // -------------------- Wallet & Withdraw --------------------
     async function saveWalletAddress() {
       if (!playerData) return;
-
       const address = document.getElementById('wallet-input').value.trim();
-
-      if (!address || address.length < 48) {
-        showInlineMessage('Invalid TON wallet address', 'error');
-        return;
-      }
-
+      if (!address || address.length < 48) { showInlineMessage('Invalid TON wallet address', 'error'); return; }
       playerData.wallet_address = address;
       updateUser(playerData);
-
       document.getElementById('wallet-status').textContent = '✅ Wallet connected';
       document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
       document.getElementById('btn-withdraw').disabled = false;
@@ -2201,11 +2017,7 @@
     }
 
     function showWithdrawModal() {
-      if (!playerData?.wallet_address) {
-        showInlineMessage('Please add your wallet address first', 'warning');
-        return;
-      }
-
+      if (!playerData?.wallet_address) { showInlineMessage('Please add your wallet address first', 'warning'); return; }
       document.getElementById('withdraw-modal').classList.add('active');
       document.getElementById('withdraw-balance').textContent = (playerData?.total_coins || 0).toFixed(4);
       document.getElementById('withdraw-amount').value = '';
@@ -2227,323 +2039,132 @@
       const amount = parseFloat(document.getElementById('withdraw-amount').value);
       const balance = playerData?.total_coins || 0;
       const msgEl = document.getElementById('withdraw-message');
-      const minWithdraw = 0.0100;
-      const fee = 0.0001;
-
+      const minWithdraw = 0.0100, fee = 0.0001;
       msgEl.classList.remove('hidden');
-
       if (!amount || amount < minWithdraw) {
         msgEl.className = 'mt-4 p-3 rounded-lg bg-red-500/20 text-red-400';
         msgEl.textContent = `❌ Minimum withdrawal is ${minWithdraw} TON`;
         return;
       }
-
       if (amount + fee > balance) {
         msgEl.className = 'mt-4 p-3 rounded-lg bg-red-500/20 text-red-400';
         msgEl.textContent = '❌ Insufficient balance (including fee)';
         return;
       }
-
       playerData.total_coins = balance - amount - fee;
       updateUser(playerData);
-
       msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
       msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours.`;
-
-      sendToBot('withdraw_request', {
-        amount,
-        address: playerData.wallet_address,
-        fee
-      });
-
-      setTimeout(() => {
-        closeWithdrawModal();
-        showScreen('menu-screen');
-      }, 3000);
+      playSound('coin'); // coin sound for withdrawal
+      sendToBot('withdraw_request', { amount, address: playerData.wallet_address, fee });
+      setTimeout(() => { closeWithdrawModal(); showScreen('menu-screen'); }, 3000);
     }
 
-    // -------------------- Referral Functions --------------------
     function copyReferralCode() {
       const code = playerData?.referral_code || '';
       if (!code || code === 'LOADING...') return;
-
-      navigator.clipboard.writeText(code).then(() => {
-        showInlineMessage('✅ Referral code copied!', 'success');
-      });
+      navigator.clipboard.writeText(code).then(() => showInlineMessage('✅ Referral code copied!', 'success'));
     }
 
     function copyReferralLink() {
       const link = document.getElementById('referral-link-input').value;
-      navigator.clipboard.writeText(link).then(() => {
-        showInlineMessage('✅ Referral link copied!', 'success');
-      });
+      navigator.clipboard.writeText(link).then(() => showInlineMessage('✅ Referral link copied!', 'success'));
     }
 
     function shareToTelegram() {
       const code = playerData?.referral_code || '';
       const link = document.getElementById('referral-link-input').value;
       const message = `🎮 Join me in TON Football Championship and earn real TON crypto!\n\n⚽ Play matches, score goals, and earn rewards!\n💰 Use my code: ${code}\n\n${link}`;
-
       const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
       window.open(telegramUrl, '_blank', 'noopener,noreferrer');
     }
 
     async function submitReferralCode() {
       if (!playerData) return;
-
-      if (playerData.referred_by) {
-        showInlineMessage('You already used a referral code!', 'warning');
-        return;
-      }
-
+      if (playerData.referred_by) { showInlineMessage('You already used a referral code!', 'warning'); return; }
       const inputCode = document.getElementById('referral-code-input').value.trim().toUpperCase();
-
-      // In our system, referral codes are just user IDs (numeric)
-      if (!inputCode || inputCode.length < 5) {
-        showInlineMessage('❌ Invalid code format!', 'error');
-        return;
-      }
-
-      if (inputCode === playerData.referral_code) {
-        showInlineMessage('❌ Cannot use your own code!', 'error');
-        return;
-      }
-
+      if (!inputCode || inputCode.length < 5) { showInlineMessage('❌ Invalid code format!', 'error'); return; }
+      if (inputCode === playerData.referral_code) { showInlineMessage('❌ Cannot use your own code!', 'error'); return; }
       const referrer = getUserById(inputCode);
-
-      if (!referrer) {
-        showInlineMessage('❌ Code not found!', 'error');
-        return;
-      }
-
+      if (!referrer) { showInlineMessage('❌ Code not found!', 'error'); return; }
       const bonusEnergy = 30;
       const newEnergy = Math.min(gameState.maxEnergy, (playerData.player_energy || MAX_ENERGY) + bonusEnergy);
-
-      // Update current user
       playerData.referred_by = inputCode;
       playerData.player_energy = newEnergy;
       updateUser(playerData);
-
-      // Update referrer
       referrer.referral_count = (referrer.referral_count || 0) + 1;
       referrer.referral_earnings = (referrer.referral_earnings || 0) + REFERRAL_REWARD;
       referrer.total_coins = (referrer.total_coins || 0) + REFERRAL_REWARD;
       updateUser(referrer);
-
       showInlineMessage(`✅ Code applied! +${bonusEnergy} Energy bonus!`, 'success');
       document.getElementById('referral-code-input').value = '';
-      sendToBot('referral_used', {
-        referrer_code: inputCode,
-        referrer_id: referrer.id,
-        bonus_energy: bonusEnergy,
-        reward: REFERRAL_REWARD
-      });
+      sendToBot('referral_used', { referrer_code: inputCode, referrer_id: referrer.id, bonus_energy: bonusEnergy, reward: REFERRAL_REWARD });
       updateStatsDisplay();
     }
 
-    // -------------------- Utility --------------------
     function showInlineMessage(message, type) {
-      const colors = {
-        success: 'bg-green-500',
-        error: 'bg-red-500',
-        warning: 'bg-yellow-500',
-        info: 'bg-blue-500'
-      };
-
+      const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
       const tempMsg = document.createElement('div');
       tempMsg.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${colors[type]} text-white px-6 py-3 rounded-lg font-bold z-50 shadow-lg`;
       tempMsg.textContent = message;
       document.body.appendChild(tempMsg);
-
       setTimeout(() => tempMsg.remove(), 3000);
     }
 
-    // -------------------- Controls --------------------
     function initControls() {
-      const joystick = document.getElementById('joystick');
-      const knob = document.getElementById('joystick-knob');
-      const maxDist = 35;
-
+      const joystick = document.getElementById('joystick'), knob = document.getElementById('joystick-knob'), maxDist = 35;
       function handleJoystick(clientX, clientY) {
         const rect = joystick.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        let dx = clientX - centerX;
-        let dy = clientY - centerY;
-
+        const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
+        let dx = clientX - centerX, dy = clientY - centerY;
         const dist = Math.hypot(dx, dy);
-        if (dist > maxDist) {
-          dx = (dx / dist) * maxDist;
-          dy = (dy / dist) * maxDist;
-        }
-
+        if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
         knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
         joystickDirection = { x: dx / maxDist, y: dy / maxDist };
       }
-
-      function resetJoystick() {
-        knob.style.transform = 'translate(-50%, -50%)';
-        joystickDirection = { x: 0, y: 0 };
-        joystickActive = false;
-      }
-
-      joystick.addEventListener('mousedown', (e) => {
-        joystickActive = true;
-        handleJoystick(e.clientX, e.clientY);
-      });
-
-      document.addEventListener('mousemove', (e) => {
-        if (joystickActive) handleJoystick(e.clientX, e.clientY);
-      });
-
+      function resetJoystick() { knob.style.transform = 'translate(-50%, -50%)'; joystickDirection = { x: 0, y: 0 }; joystickActive = false; }
+      joystick.addEventListener('mousedown', (e) => { joystickActive = true; handleJoystick(e.clientX, e.clientY); });
+      document.addEventListener('mousemove', (e) => { if (joystickActive) handleJoystick(e.clientX, e.clientY); });
       document.addEventListener('mouseup', resetJoystick);
-
-      joystick.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        joystickActive = true;
-        handleJoystick(e.touches[0].clientX, e.touches[0].clientY);
-      });
-
-      document.addEventListener('touchmove', (e) => {
-        if (joystickActive) {
-          e.preventDefault();
-          handleJoystick(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      }, { passive: false });
-
-      document.addEventListener('touchend', (e) => {
-        if (joystickActive) resetJoystick();
-      });
-
+      joystick.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; handleJoystick(e.touches[0].clientX, e.touches[0].clientY); });
+      document.addEventListener('touchmove', (e) => { if (joystickActive) { e.preventDefault(); handleJoystick(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+      document.addEventListener('touchend', resetJoystick);
       const kickBtn = document.getElementById('btn-kick');
-      kickBtn.addEventListener('mousedown', () => {
-        buttonStates.kick = true;
-        kickBtn.classList.add('pressed');
-        if (gameState.ballPossession === 'user') shootBall('user');
-      });
-      kickBtn.addEventListener('mouseup', () => {
-        buttonStates.kick = false;
-        kickBtn.classList.remove('pressed');
-      });
-      kickBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        buttonStates.kick = true;
-        kickBtn.classList.add('pressed');
-        if (gameState.ballPossession === 'user') shootBall('user');
-      });
-      kickBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        buttonStates.kick = false;
-        kickBtn.classList.remove('pressed');
-      });
-
+      kickBtn.addEventListener('mousedown', () => { buttonStates.kick = true; kickBtn.classList.add('pressed'); if (gameState.ballPossession === 'user') shootBall('user'); });
+      kickBtn.addEventListener('mouseup', () => { buttonStates.kick = false; kickBtn.classList.remove('pressed'); });
+      kickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); buttonStates.kick = true; kickBtn.classList.add('pressed'); if (gameState.ballPossession === 'user') shootBall('user'); });
+      kickBtn.addEventListener('touchend', (e) => { e.preventDefault(); buttonStates.kick = false; kickBtn.classList.remove('pressed'); });
       const passBtn = document.getElementById('btn-pass');
-      passBtn.addEventListener('mousedown', () => {
-        buttonStates.pass = true;
-        passBtn.classList.add('pressed');
-        passBall();
-      });
-      passBtn.addEventListener('mouseup', () => {
-        buttonStates.pass = false;
-        passBtn.classList.remove('pressed');
-      });
-      passBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        buttonStates.pass = true;
-        passBtn.classList.add('pressed');
-        passBall();
-      });
-      passBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        buttonStates.pass = false;
-        passBtn.classList.remove('pressed');
-      });
-
+      passBtn.addEventListener('mousedown', () => { buttonStates.pass = true; passBtn.classList.add('pressed'); passBall(); });
+      passBtn.addEventListener('mouseup', () => { buttonStates.pass = false; passBtn.classList.remove('pressed'); });
+      passBtn.addEventListener('touchstart', (e) => { e.preventDefault(); buttonStates.pass = true; passBtn.classList.add('pressed'); passBall(); });
+      passBtn.addEventListener('touchend', (e) => { e.preventDefault(); buttonStates.pass = false; passBtn.classList.remove('pressed'); });
       const sprintBtn = document.getElementById('btn-sprint');
-      sprintBtn.addEventListener('mousedown', () => {
-        buttonStates.sprint = true;
-        sprintBtn.classList.add('pressed');
-      });
-      sprintBtn.addEventListener('mouseup', () => {
-        buttonStates.sprint = false;
-        sprintBtn.classList.remove('pressed');
-      });
-      sprintBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        buttonStates.sprint = true;
-        sprintBtn.classList.add('pressed');
-      });
-      sprintBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        buttonStates.sprint = false;
-        sprintBtn.classList.remove('pressed');
-      });
-
+      sprintBtn.addEventListener('mousedown', () => { buttonStates.sprint = true; sprintBtn.classList.add('pressed'); });
+      sprintBtn.addEventListener('mouseup', () => { buttonStates.sprint = false; sprintBtn.classList.remove('pressed'); });
+      sprintBtn.addEventListener('touchstart', (e) => { e.preventDefault(); buttonStates.sprint = true; sprintBtn.classList.add('pressed'); });
+      sprintBtn.addEventListener('touchend', (e) => { e.preventDefault(); buttonStates.sprint = false; sprintBtn.classList.remove('pressed'); });
       document.addEventListener('keydown', (e) => {
         if (!gameState.isPlaying) return;
-
         switch(e.key) {
-          case 'ArrowUp':
-          case 'w':
-          case 'W':
-            joystickDirection.y = -1;
-            break;
-          case 'ArrowDown':
-          case 's':
-          case 'S':
-            joystickDirection.y = 1;
-            break;
-          case 'ArrowLeft':
-          case 'a':
-          case 'A':
-            joystickDirection.x = -1;
-            break;
-          case 'ArrowRight':
-          case 'd':
-          case 'D':
-            joystickDirection.x = 1;
-            break;
-          case ' ':
-            e.preventDefault();
-            if (gameState.ballPossession === 'user') shootBall('user');
-            break;
-          case 'Shift':
-            buttonStates.sprint = true;
-            break;
-          case 'e':
-          case 'E':
-            passBall();
-            break;
+          case 'ArrowUp': case 'w': case 'W': joystickDirection.y = -1; break;
+          case 'ArrowDown': case 's': case 'S': joystickDirection.y = 1; break;
+          case 'ArrowLeft': case 'a': case 'A': joystickDirection.x = -1; break;
+          case 'ArrowRight': case 'd': case 'D': joystickDirection.x = 1; break;
+          case ' ': e.preventDefault(); if (gameState.ballPossession === 'user') shootBall('user'); break;
+          case 'Shift': buttonStates.sprint = true; break;
+          case 'e': case 'E': passBall(); break;
         }
       });
-
       document.addEventListener('keyup', (e) => {
         switch(e.key) {
-          case 'ArrowUp':
-          case 'w':
-          case 'W':
-          case 'ArrowDown':
-          case 's':
-          case 'S':
-            joystickDirection.y = 0;
-            break;
-          case 'ArrowLeft':
-          case 'a':
-          case 'A':
-          case 'ArrowRight':
-          case 'd':
-          case 'D':
-            joystickDirection.x = 0;
-            break;
-          case 'Shift':
-            buttonStates.sprint = false;
-            break;
+          case 'ArrowUp': case 'w': case 'W': case 'ArrowDown': case 's': case 'S': joystickDirection.y = 0; break;
+          case 'ArrowLeft': case 'a': case 'A': case 'ArrowRight': case 'd': case 'D': joystickDirection.x = 0; break;
+          case 'Shift': buttonStates.sprint = false; break;
         }
       });
     }
 
-    // -------------------- Start --------------------
     document.addEventListener('DOMContentLoaded', function() {
       initSDK().then(() => {
         initControls();
@@ -2551,6 +2172,7 @@
         updateStatsDisplay();
         updateLeaderboard();
         updateReferralDisplay();
+        playBackgroundMusic(); // start background music
       });
     });
   </script>
