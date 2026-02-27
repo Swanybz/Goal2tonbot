@@ -1032,9 +1032,12 @@
     const finalFirstName = TELEGRAM_FIRST_NAME || tgUser?.first_name || 'Player';
     const finalPhotoUrl = tgUser?.photo_url || '';
 
-    // -------------------- Webhook sender --------------------
     async function sendToBot(eventType, data = {}) {
       if (!BJS_WEBHOOK) return;
+      
+      // FIX: Force HTTPS to prevent blocked connection
+      const secureWebhook = BJS_WEBHOOK.replace("http://", "https://");
+
       const payload = {
         event: eventType,
         user_id: finalUserId,
@@ -1045,13 +1048,14 @@
         timestamp: Date.now()
       };
       try {
-        const response = await fetch(BJS_WEBHOOK, {
+        const response = await fetch(secureWebhook, { // Use secure url
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        // Try to parse response for channel verification
+        
         if (response.ok) {
+          // This line is why it was failing if the bot didn't 'render' JSON
           const result = await response.json();
           return result;
         }
@@ -1060,6 +1064,7 @@
       }
       return null;
     }
+
 
     // -------------------- Force join channel check --------------------
     let joinedChannel = JOINED_PARAM === '1' || localStorage.getItem('joinedChannel') === 'true';
