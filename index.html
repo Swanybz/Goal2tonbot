@@ -487,6 +487,7 @@
   <style>@view-transition { navigation: auto; }</style>
  </head>
  <body class="h-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white overflow-auto">
+  <!-- menu-screen, game-screen, etc. (exactly as before) -->
   <div id="menu-screen" class="screen active flex-col items-center justify-center min-h-full p-6">
    <div class="text-center mb-6">
     <svg class="w-24 h-24 mx-auto mb-4" viewbox="0 0 100 100"><defs>
@@ -1000,137 +1001,104 @@
    </div>
   </div>
 
- <script>
+  <script>
     // Global error handler
     window.onerror = function(msg, url, line) {
       console.error('Global error:', msg, 'at', url, 'line', line);
+      showInlineMessage('Game error: ' + msg, 'error');
       return false;
     };
 
-    // 1. -------------------- Nexus Data Decoding & Mapping --------------------
+    // -------------------- DECODE START PARAMETER (BRIDGE) --------------------
     const urlParams = new URLSearchParams(window.location.search);
-    
-    // --- NEW: Base64 Decoding Logic ---
-    let decodedData = {};
-    const encodedParam = urlParams.get('data');
-    if (encodedParam) {
-        try {
-            // Decodes the Base64 string sent from the Bot
-            const jsonString = atob(decodeURIComponent(encodedParam));
-            decodedData = JSON.parse(jsonString);
-        } catch (e) {
-            console.error('Nexus Decode Error:', e);
-        }
+    const startParam = urlParams.get('start');
+
+    let BJS_WEBHOOK = null;
+    let TELEGRAM_UID = null;
+    let TELEGRAM_USERNAME = 'Player';
+    let TELEGRAM_FIRST_NAME = 'Player';
+    let IS_JOINED = false;
+    let REFERRAL_CODE = null;
+    let REFERRAL_COUNT = 0;
+
+    if (startParam) {
+      try {
+        // Decode Base64 (btoa/atob works in browser)
+        const decodedStr = atob(decodeURIComponent(startParam));
+        const data = JSON.parse(decodedStr);
+        console.log('Decoded start data:', data);
+
+        // Extract values
+        TELEGRAM_UID = data.user_id || data.user?.user_id;
+        TELEGRAM_USERNAME = data.user?.username || 'Player';
+        TELEGRAM_FIRST_NAME = data.user?.first_name || 'Player';
+        BJS_WEBHOOK = data.webhook;
+        IS_JOINED = data.joined === 1;
+        REFERRAL_CODE = data.ref !== 'none' ? data.ref : null;
+        REFERRAL_COUNT = data.ref_count || 0;
+      } catch (e) {
+        console.error('Failed to decode start param:', e);
+      }
     }
 
-    // Priority 1: Decoded Data (From Base64)
-    // Priority 2: URL Parameters (Legacy Fallback)
-    const BJS_WEBHOOK = decodedData.webhook || urlParams.get('webhook');
-    const BOT_ID = decodedData.botid || urlParams.get('botid');
-    const JOINED_PARAM = decodedData.joined || urlParams.get('joined'); 
-    const REFERRAL_CODE_PARAM = decodedData.ref || urlParams.get('ref') || 'none';
-    const TELEGRAM_UID = decodedData.user_id || urlParams.get('uid');
-    const TELEGRAM_USERNAME = decodedData.username || urlParams.get('user');
-    const TELEGRAM_FIRST_NAME = decodedData.first_name || urlParams.get('name');
-
-    // Priority 3: Telegram WebApp Fallback
+    // Fallback to Telegram WebApp if no start param (just in case)
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
     }
-
-    // Final Mapping
     const tgUser = tg?.initDataUnsafe?.user;
-    const finalUserId = TELEGRAM_UID || tgUser?.id || 'unknown';
-    const finalUsername = TELEGRAM_USERNAME || tgUser?.username || 'Player' + Math.floor(Math.random() * 1000);
-    const finalFirstName = TELEGRAM_FIRST_NAME || tgUser?.first_name || 'Operator';
-    const finalPhotoUrl = tgUser?.photo_url || '';
+    TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
+    TELEGRAM_USERNAME = TELEGRAM_USERNAME || tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
+    TELEGRAM_FIRST_NAME = TELEGRAM_FIRST_NAME || tgUser?.first_name || 'Player';
 
-    // 2. -------------------- UI Initialization --------------------
-    window.addEventListener('load', () => {
-        // If we have a User ID, hide the "No Data" error and show the game
-        if (finalUserId !== 'unknown') {
-            const loadingScreen = document.getElementById('loading-screen'); 
-            if (loadingScreen) loadingScreen.classList.add('hidden');
-            
-            // Map data to UI elements
-            if(document.getElementById('user-name')) document.getElementById('user-name').innerText = finalFirstName;
-            if(document.getElementById('user-id')) document.getElementById('user-id').innerText = finalUserId;
-        } else {
-            console.error("Mapping Failed: UID is unknown");
-        }
-    });
-
-    // 3. -------------------- Webhook Sender --------------------
+    // -------------------- Webhook sender --------------------
     async function sendToBot(eventType, data = {}) {
-      if (!BJS_WEBHOOK) return null;
-      
-      const secureWebhook = BJS_WEBHOOK.replace("http://", "https://");
-
+      if (!BJS_WEBHOOK) return;
       const payload = {
         event: eventType,
-        user_id: finalUserId,
-        username: finalUsername,
-        first_name: finalFirstName,
-        referrer: REFERRAL_CODE_PARAM,
+        user_id: TELEGRAM_UID,
+        username: TELEGRAM_USERNAME,
+        first_name: TELEGRAM_FIRST_NAME,
         ...data,
         timestamp: Date.now()
       };
-
       try {
-        const response = await fetch(secureWebhook, {
+        const response = await fetch(BJS_WEBHOOK, {
           method: 'POST',
-          // Note: fetch to BJs webhooks usually works best with 'no-cors' if you don't need a JSON response back
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        
-        // Return success if status is OK
         if (response.ok) {
-          try { return await response.json(); } catch(e) { return { success: true }; }
+          return await response.json();
         }
       } catch (e) {
-        console.warn('Nexus Sync Failed', e);
+        console.warn('Webhook send failed', e);
       }
       return null;
     }
 
-    // 4. -------------------- Force Join Logic --------------------
-    let joinedChannel = JOINED_PARAM === '1' || localStorage.getItem('joinedChannel') === 'true';
-    
-    // Initial banner state
-    const banner = document.getElementById('join-channel-banner');
-    if (banner) {
-        if (joinedChannel) {
-            banner.classList.add('hidden');
-        } else {
-            banner.classList.remove('hidden');
-        }
+    // -------------------- Force join channel check --------------------
+    let joinedChannel = IS_JOINED || localStorage.getItem('joinedChannel') === 'true';
+    if (!joinedChannel) {
+      document.getElementById('join-channel-banner').classList.remove('hidden');
+    } else {
+      document.getElementById('join-channel-banner').classList.add('hidden');
     }
 
     async function verifyChannelJoin() {
-      // Inline feedback logic
-      const btn = document.getElementById('verify-btn');
-      if(btn) btn.innerText = "Verifying...";
-
+      showInlineMessage('Verifying...', 'info');
       const response = await sendToBot('verify_channel', {});
-      
-      // If the bot webhook responds with a success object
-      if (response && (response.joined === true || response.success === true)) {
+      if (response && response.joined === true) {
         joinedChannel = true;
         localStorage.setItem('joinedChannel', 'true');
-        if (banner) banner.classList.add('hidden');
-        alert('✅ Verification Successful!');
-        if(typeof updateStatsDisplay === "function") updateStatsDisplay();
+        document.getElementById('join-channel-banner').classList.add('hidden');
+        showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
+        updateStatsDisplay(); // Refresh play button
       } else {
-        alert('❌ Not detected in channel. Please join @Goal2ton_payout first.');
-        if(btn) btn.innerText = "Verify Join";
+        showInlineMessage('❌ Not a member yet. Please join the channel first.', 'error');
       }
     }
-
-
-
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
@@ -1216,8 +1184,8 @@
             }
 
             // If we have Telegram user, ensure playerData matches
-            if (finalUserId && (!playerData || playerData.telegram_id !== finalUserId)) {
-              const existing = data.find(p => p.telegram_id === finalUserId);
+            if (TELEGRAM_UID && (!playerData || playerData.telegram_id !== TELEGRAM_UID)) {
+              const existing = data.find(p => p.telegram_id === TELEGRAM_UID);
               if (existing) {
                 playerData = existing;
                 localStorage.setItem('playerId', playerData.id);
@@ -1230,8 +1198,11 @@
             updateLeaderboard();
             updateReferralDisplay();
 
-            // Handle referral param after player data is ready
-            handleReferralParam();
+            // Handle referral param
+            if (REFERRAL_CODE && playerData && !playerData.referred_by) {
+              document.getElementById('referral-code-input').value = REFERRAL_CODE;
+              showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
+            }
           }
         };
 
@@ -1245,10 +1216,9 @@
     async function createNewTelegramPlayer() {
       const newPlayer = {
         id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        username: finalUsername,
-        first_name: finalFirstName,
-        photo_url: finalPhotoUrl,
-        telegram_id: finalUserId,
+        username: TELEGRAM_USERNAME,
+        first_name: TELEGRAM_FIRST_NAME,
+        telegram_id: TELEGRAM_UID,
         wallet_address: '',
         total_coins: 0,
         goals_scored: 0,
@@ -1284,23 +1254,6 @@
         code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       return code;
-    }
-
-    function handleReferralParam() {
-      if (!playerData) return;
-      if (!REFERRAL_CODE_PARAM) return;
-      if (REFERRAL_CODE_PARAM === 'none') return;
-      if (playerData.referred_by) {
-        showInlineMessage('You already used a referral code.', 'info');
-        return;
-      }
-
-      const inputField = document.getElementById('referral-code-input');
-      if (inputField) {
-        inputField.value = REFERRAL_CODE_PARAM;
-        showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
-      }
-      sendToBot('referral_param_detected', { code: REFERRAL_CODE_PARAM });
     }
 
     // -------------------- UI Updates --------------------
@@ -1379,7 +1332,6 @@
       document.getElementById('referral-count').textContent = referralCount;
       document.getElementById('referral-earnings').textContent = referralEarnings;
 
-      // Telegram deep link
       const botUsername = 'Goal2Ton_bot';
       const referralLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
       document.getElementById('referral-link-input').value = referralLink;
@@ -2041,7 +1993,7 @@
       }
     }
 
-    // -------------------- Ad Reward (Monetag integration) --------------------
+    // -------------------- Ad Reward (Monetag) --------------------
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
       document.getElementById('ad-screen').classList.add('active');
@@ -2125,7 +2077,6 @@
         document.getElementById('btn-upgrade-energy').textContent = 'Upgraded ✅';
         document.getElementById('btn-upgrade-energy').disabled = true;
         sendToBot('upgrade', { type: 'energy' });
-        // Update local playerData
         playerData = updatedData;
         updateStatsDisplay();
       }
