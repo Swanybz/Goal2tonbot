@@ -1207,7 +1207,7 @@
     };
 
     let config = { ...defaultConfig };
-    let playerData = null;
+    let playerData = null;          // <-- declared here, before any usage
     let allPlayersData = [];
 
     let gameState = {
@@ -1467,6 +1467,7 @@
     }
 
     function updateLeaderboard() {
+      if (!playerData) return; // Add guard here too
       const list = document.getElementById('leaderboard-list');
       list.innerHTML = '';
 
@@ -2651,9 +2652,17 @@
     }
 
     // -------------------- Start --------------------
-    initSDK();
-    initControls();
-    updateUI();
+    // Ensure all initializations happen after DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      initSDK().then(() => {
+        initControls();
+        updateUI();
+        // Optionally, if playerData is still null, show loading message
+        if (!playerData) {
+          showInlineMessage('Loading player data...', 'info');
+        }
+      });
+    });
   </script>
  </body>
 </html>
