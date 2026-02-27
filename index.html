@@ -565,7 +565,7 @@
    </div>
   </div>
 
-  <!-- Game Screen (unchanged except dynamic AI name and user color) -->
+  <!-- Game Screen -->
   <div id="game-screen" class="screen flex-col h-full">
    <div class="flex-shrink-0 bg-gradient-to-b from-slate-900/95 to-transparent p-3">
     <div class="flex items-center justify-between max-w-lg mx-auto">
@@ -583,7 +583,7 @@
       </div>
      </div>
      <div class="flex items-center gap-3"><span id="ai-score" class="text-3xl font-black">0</span>
-      <div id="ai-team-badge" class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center font-bold text-xs">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center font-bold">
        AI
       </div>
      </div>
@@ -650,7 +650,7 @@
    </div>
   </div>
 
-  <!-- Referral Screen (updated with Telegram deep link) -->
+  <!-- Referral Screen -->
   <div id="referral-screen" class="screen flex-col min-h-full p-6 scroll-container">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -709,7 +709,7 @@
    </div>
   </div>
 
-  <!-- Leaderboard Screen with Top Scorers section -->
+  <!-- Leaderboard Screen -->
   <div id="leaderboard-screen" class="screen flex-col min-h-full p-6">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -739,15 +739,10 @@
      </div>
     </div>
    </div>
-   <!-- Top Scorers -->
-   <div class="stat-card rounded-xl p-4 mb-4">
-    <h3 class="font-bold text-lg mb-2">⚽ Top Scorers</h3>
-    <div id="top-scorers-list" class="space-y-2"></div>
-   </div>
-   <div id="leaderboard-list" class="space-y-2 scroll-container" style="max-height: 40vh;"></div>
+   <div id="leaderboard-list" class="space-y-2 scroll-container" style="max-height: 60vh;"></div>
   </div>
 
-  <!-- Upgrade Screen (unchanged) -->
+  <!-- Upgrade Screen -->
   <div id="upgrade-screen" class="screen flex-col min-h-full p-6 scroll-container">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -765,7 +760,8 @@
      Available Balance
     </div>
    </div>
-   <div class="space-y-4"><div class="stat-card rounded-xl p-5">
+   <div class="space-y-4">
+    <div class="stat-card rounded-xl p-5">
      <div class="flex items-center gap-4 mb-3">
       <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-3xl">
        ⚡
@@ -783,7 +779,8 @@
        </svg><span class="font-bold text-cyan-400">0.0010</span>
       </div><button onclick="upgradeEnergy()" id="btn-upgrade-energy" class="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg font-bold text-sm"> Upgrade </button>
      </div>
-    </div><div class="stat-card rounded-xl p-5">
+    </div>
+    <div class="stat-card rounded-xl p-5">
      <div class="flex items-center gap-4 mb-3">
       <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl">
        🎯
@@ -801,7 +798,8 @@
        </svg><span id="level-cost" class="font-bold text-cyan-400">0.0015</span>
       </div><button onclick="upgradeLevel()" id="btn-upgrade-level" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-bold text-sm"> Upgrade </button>
      </div>
-    </div><div class="stat-card rounded-xl p-5 relative">
+    </div>
+    <div class="stat-card rounded-xl p-5 relative">
      <div class="flex items-center gap-4 mb-3">
       <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-3xl">
        ⭐
@@ -833,7 +831,7 @@
    </div>
   </div>
 
-  <!-- Wallet Screen (unchanged) -->
+  <!-- Wallet Screen -->
   <div id="wallet-screen" class="screen flex-col min-h-full p-6 scroll-container">
    <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -877,7 +875,7 @@
    </div>
   </div>
 
-  <!-- VAR Overlay (unchanged) -->
+  <!-- VAR Overlay -->
   <div id="var-overlay" class="celebration-overlay">
    <div class="celebration-content">
     <div class="var-overlay rounded-2xl overflow-hidden mb-4" style="width: 300px; height: 200px;">
@@ -893,7 +891,7 @@
    </div>
   </div>
 
-  <!-- Celebration Overlay (unchanged) -->
+  <!-- Goal Celebration Overlay -->
   <div id="celebration-overlay" class="celebration-overlay">
    <div class="celebration-content">
     <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
@@ -948,7 +946,7 @@
    </div>
   </div>
 
-  <!-- Ad Screen (updated with Monetag) -->
+  <!-- Ad Reward Screen -->
   <div id="ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
     <div class="text-6xl mb-4">
@@ -973,7 +971,7 @@
    </div>
   </div>
 
-  <!-- Withdraw Modal (unchanged) -->
+  <!-- Withdraw Modal -->
   <div id="withdraw-modal" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4" style="transform: scale(1);">
     <div class="text-6xl mb-4">
@@ -1017,7 +1015,7 @@
     const REFERRAL_CODE_PARAM = urlParams.get('start'); // for deep link referral
     const JOINED_PARAM = urlParams.get('joined'); // 1 if user has joined channel
 
-    // Telegram user info (including photo if available)
+    // Telegram user info
     const tgUser = tg?.initDataUnsafe?.user;
     const tgUsername = tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
     const tgFirstName = tgUser?.first_name || 'Player';
@@ -1031,7 +1029,7 @@
         event: eventType,
         user_id: tgUserId,
         username: tgUsername,
-        photo_url: tgPhotoUrl, // include profile photo if available
+        photo_url: tgPhotoUrl,
         ...data,
         timestamp: Date.now()
       };
@@ -1053,7 +1051,6 @@
     }
 
     async function verifyChannelJoin() {
-      // Ask bot to verify membership (bot will respond separately)
       sendToBot('verify_channel', {});
       showInlineMessage('Verification requested. Please wait and then click Play again.', 'info');
     }
@@ -1154,13 +1151,11 @@
 
             // If we have Telegram user, ensure playerData matches
             if (tgUserId && (!playerData || playerData.telegram_id !== tgUserId)) {
-              // Try to find by telegram_id
               const existing = data.find(p => p.telegram_id === tgUserId);
               if (existing) {
                 playerData = existing;
                 localStorage.setItem('playerId', playerData.id);
               } else {
-                // Create new player with Telegram info
                 createNewTelegramPlayer();
               }
             }
@@ -1168,9 +1163,6 @@
             updateStatsDisplay();
             updateLeaderboard();
             updateReferralDisplay();
-            updateTopScorers();
-
-            // Handle referral param after player data is ready
             handleReferralParam();
           }
         };
@@ -1187,7 +1179,7 @@
         id: 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         username: tgUsername,
         first_name: tgFirstName,
-        photo_url: tgPhotoUrl, // store profile photo
+        photo_url: tgPhotoUrl,
         telegram_id: tgUserId,
         wallet_address: '',
         total_coins: 0,
@@ -1213,7 +1205,6 @@
       const result = await window.dataSdk.create(newPlayer);
       if (result.isOk) {
         localStorage.setItem('playerId', newPlayer.id);
-        // Send creation event to bot
         sendToBot('player_created', { player: newPlayer });
       }
     }
@@ -1227,25 +1218,21 @@
       return code;
     }
 
-    // Handle referral parameter from URL (e.g., ?start=ref_CODE)
     function handleReferralParam() {
       if (!playerData) return;
       if (!REFERRAL_CODE_PARAM) return;
       if (!REFERRAL_CODE_PARAM.startsWith('ref_')) return;
       if (playerData.referred_by) {
-        // Already used a code, just show a message
         showInlineMessage('You already used a referral code.', 'info');
         return;
       }
 
       const refCode = REFERRAL_CODE_PARAM.replace('ref_', '');
-      // Pre-fill the referral input field
       const inputField = document.getElementById('referral-code-input');
       if (inputField) {
         inputField.value = refCode;
         showInlineMessage('Referral code detected! Click Submit to claim bonus energy.', 'success');
       }
-      // Optionally send event to bot
       sendToBot('referral_param_detected', { code: refCode });
     }
 
@@ -1326,7 +1313,7 @@
       document.getElementById('referral-earnings').textContent = referralEarnings;
 
       // Telegram deep link
-      const botUsername = 'Goal2Ton_bot'; // replace with your bot username
+      const botUsername = 'Goal2Ton_bot';
       const referralLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
       document.getElementById('referral-link-input').value = referralLink;
 
@@ -1384,38 +1371,26 @@
       }
     }
 
-    function updateTopScorers() {
-      const topScorers = [...allPlayersData].sort((a, b) => (b.goals_scored || 0) - (a.goals_scored || 0)).slice(0, 5);
-      const list = document.getElementById('top-scorers-list');
-      list.innerHTML = topScorers.map((p, i) => `
-        <div class="flex justify-between items-center text-sm">
-          <span>${i+1}. ${p.username || 'Player'}</span>
-          <span class="text-yellow-400 font-bold">${p.goals_scored || 0} ⚽</span>
-        </div>
-      `).join('');
-    }
-
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
 
       if (screenId === 'leaderboard-screen') {
         updateLeaderboard();
-        updateTopScorers();
       } else if (screenId === 'referral-screen') {
         updateReferralDisplay();
       }
     }
 
-    // -------------------- Game Functions (unchanged core, but added webhook & team name) --------------------
+    // -------------------- Game Functions (preserved from original) --------------------
     async function checkAndStartGame() {
-      if (!joinedChannel) {
-        showInlineMessage('Please join our Telegram channel first!', 'warning');
+      if (!playerData) {
+        // Player creation is handled by dataSdk, but just in case
         return;
       }
 
-      if (!playerData) {
-        // Should have been created by now
+      if (!joinedChannel) {
+        showInlineMessage('Please join our Telegram channel first!', 'warning');
         return;
       }
 
@@ -1784,7 +1759,6 @@
           gameState.goalsThisMatch++;
           gameState.coinsEarned += GOAL_REWARD;
 
-          // Send goal event to bot
           sendToBot('goal_scored', {
             match_id: Date.now(),
             goal_number: gameState.goalsThisMatch,
@@ -1966,7 +1940,6 @@
 
       await saveStats(result);
 
-      // Send match end to bot
       sendToBot('match_end', {
         result,
         user_score: gameState.userScore,
@@ -2001,16 +1974,12 @@
     // -------------------- Ad Reward (Monetag integration) --------------------
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
-      // Show ad screen with timer
       document.getElementById('ad-screen').classList.add('active');
 
-      // Use Monetag rewarded ad
       if (typeof show_10656450 === 'function') {
         show_10656450('pop').then(() => {
-          // User watched ad successfully
           completeAdReward();
         }).catch(e => {
-          // Ad failed or was closed early
           document.getElementById('ad-screen').classList.remove('active');
           showInlineMessage('Ad not completed. Try again.', 'warning');
         });
@@ -2056,7 +2025,7 @@
       }
     }
 
-    // -------------------- Upgrade Functions (unchanged, but add webhook) --------------------
+    // -------------------- Upgrade Functions (with webhook) --------------------
     async function upgradeEnergy() {
       if (!playerData) return;
 
@@ -2137,7 +2106,7 @@
       }
     }
 
-    // -------------------- Wallet & Withdraw (add webhook) --------------------
+    // -------------------- Wallet & Withdraw (with webhook) --------------------
     async function saveWalletAddress() {
       if (!playerData) return;
 
@@ -2218,7 +2187,6 @@
         msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
         msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours.`;
 
-        // Send withdrawal request to bot
         sendToBot('withdraw_request', {
           amount,
           address: playerData.wallet_address,
@@ -2235,7 +2203,7 @@
       }
     }
 
-    // -------------------- Referral Functions (add webhook) --------------------
+    // -------------------- Referral Functions (with webhook) --------------------
     function copyReferralCode() {
       const code = playerData?.referral_code || '';
       if (!code || code === 'LOADING...') return;
@@ -2310,7 +2278,6 @@
       if (result1.isOk && result2.isOk) {
         showInlineMessage(`✅ Code applied! +${bonusEnergy} Energy bonus!`, 'success');
         document.getElementById('referral-code-input').value = '';
-        // Send referral event to bot
         sendToBot('referral_used', {
           referrer_code: inputCode,
           referrer_id: referrer.id,
@@ -2339,7 +2306,7 @@
       setTimeout(() => tempMsg.remove(), 3000);
     }
 
-    // -------------------- Controls (unchanged) --------------------
+    // -------------------- Controls --------------------
     function initControls() {
       const joystick = document.getElementById('joystick');
       const knob = document.getElementById('joystick-knob');
