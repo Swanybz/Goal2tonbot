@@ -1011,7 +1011,6 @@
 
     // -------------------- DECODE DATA PARAMETER (FIXED BRIDGE) --------------------
     const urlParams = new URLSearchParams(window.location.search);
-    // BJs Pro uses ?data=, fall back to ?start= for older links
     const startParam = urlParams.get('data') || urlParams.get('start');
 
     let BJS_WEBHOOK = null;
@@ -1024,35 +1023,56 @@
 
     if (startParam) {
       try {
-        // Decode Base64 (btoa/atob works in browser)
         const decodedStr = atob(decodeURIComponent(startParam));
         const data = JSON.parse(decodedStr);
         console.log('Decoded start data:', data);
 
-        // Extract values using BJs Pro keys
         TELEGRAM_UID = data.user_id || data.user?.user_id;
         TELEGRAM_USERNAME = data.username || data.user?.username || 'Player';
         TELEGRAM_FIRST_NAME = data.first_name || data.user?.first_name || 'Player';
         BJS_WEBHOOK = data.webhook;
-        // BJs sends "1" for true, "0" for false
         IS_JOINED = (data.joined === 1 || data.joined === "1");
         REFERRAL_CODE = (data.ref && data.ref !== 'none') ? data.ref : null;
         REFERRAL_COUNT = data.ref_count || 0;
+
+        // --- NEW FIX START ---
+        // Create an immediate "session" player so the game doesn't show "Loading..."
+        playerData = {
+          telegram_id: TELEGRAM_UID,
+          username: TELEGRAM_USERNAME,
+          first_name: TELEGRAM_FIRST_NAME,
+          total_coins: 0, 
+          player_energy: 100,
+          player_level: 1,
+          referral_count: REFERRAL_COUNT,
+          joined_channel: IS_JOINED
+        };
+        // --- NEW FIX END ---
+
       } catch (e) {
         console.error('Failed to decode start param:', e);
       }
     }
 
-    // Fallback to Telegram WebApp if no start param (just in case)
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
     }
+
+    // Ensure IDs are synced even if param fails
     const tgUser = tg?.initDataUnsafe?.user;
     TELEGRAM_UID = TELEGRAM_UID || tgUser?.id || 'unknown';
-    TELEGRAM_USERNAME = TELEGRAM_USERNAME || tgUser?.username || 'Player' + Math.floor(Math.random() * 10000);
-    TELEGRAM_FIRST_NAME = TELEGRAM_FIRST_NAME || tgUser?.first_name || 'Player';
+    
+    // Final check: if we have a UID but no playerData yet, make a shell
+    if (TELEGRAM_UID !== 'unknown' && !playerData) {
+        playerData = { telegram_id: TELEGRAM_UID, total_coins: 0, player_energy: 100 };
+    }
+
+    // Refresh display immediately so buttons unlock
+    document.addEventListener('DOMContentLoaded', () => {
+        updateStatsDisplay(); 
+    });
 
     // -------------------- Webhook sender --------------------
     async function sendToBot(eventType, data = {}) {
