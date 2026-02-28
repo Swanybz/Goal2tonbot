@@ -564,7 +564,7 @@
     <button onclick="showScreen('upgrade-screen')" class="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 rounded-xl font-semibold transition-all"> ⚡ Upgrade Players </button>
     <button onclick="showScreen('leaderboard-screen')" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 rounded-xl font-semibold transition-all"> 🏆 Leaderboard </button>
     <button onclick="showScreen('wallet-screen')" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-semibold transition-all"> 💰 TON Wallet </button>
-    <!-- New Music Toggle Button -->
+    <!-- Music Toggle Button -->
     <button onclick="toggleMusic()" id="music-toggle-btn" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl font-semibold transition-all"> 🎵 Music: ON </button>
    </div>
    <div class="text-center text-xs text-gray-500">
@@ -1015,10 +1015,10 @@
     // Global error handler
     window.onerror = function(msg, url, line) {
       console.error('Global error:', msg, 'at', url, 'line', line);
-      return true;
+      return true; // Prevent default error handling
     };
 
-    // -------------------- Sound System with Web Audio API --------------------
+    // -------------------- Sound System with Web Audio API (fail-safe) --------------------
     let audioCtx = null;
     let musicInterval = null;
     let musicEnabled = true; // default on
@@ -1028,7 +1028,7 @@
         try {
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         } catch(e) {
-          console.warn('Web Audio API not supported');
+          console.warn('Web Audio API not supported, sounds disabled');
         }
       }
     }
@@ -1037,91 +1037,96 @@
       if (!audioCtx) initAudio();
       if (!audioCtx) return;
       // Resume if suspended
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      const now = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      switch(type) {
-        case 'kick':
-          // thump from 200Hz to 100Hz in 0.1s
-          osc.frequency.setValueAtTime(200, now);
-          osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-          gain.gain.setValueAtTime(1, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-          osc.stop(now + 0.1);
-          break;
-        case 'pass':
-          // whoosh 400Hz to 300Hz in 0.08s
-          osc.frequency.setValueAtTime(400, now);
-          osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
-          gain.gain.setValueAtTime(0.8, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-          osc.stop(now + 0.08);
-          break;
-        case 'goal':
-          // ascending jingle: 440,540,640,740,840 each 0.3s
-          let times = [0, 0.3, 0.6, 0.9, 1.2];
-          let freqs = [440, 540, 640, 740, 840];
-          times.forEach((t, i) => {
-            osc.frequency.setValueAtTime(freqs[i], now + t);
-          });
-          gain.gain.setValueAtTime(0.7, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
-          osc.stop(now + 1.5);
-          break;
-        case 'whistle':
-          // sharp rising peep: 800Hz to 1200Hz after 0.15s, fade out 0.3s
-          osc.frequency.setValueAtTime(800, now);
-          osc.frequency.linearRampToValueAtTime(1200, now + 0.15);
-          gain.gain.setValueAtTime(1, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-          osc.stop(now + 0.3);
-          break;
-        case 'coin':
-          // bright ching 800Hz to 1200Hz in 0.1s
-          osc.frequency.setValueAtTime(800, now);
-          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-          gain.gain.setValueAtTime(0.8, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-          osc.stop(now + 0.1);
-          break;
-        default: return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(e => {});
       }
-      osc.start(now);
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        switch(type) {
+          case 'kick':
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+            gain.gain.setValueAtTime(1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.stop(now + 0.1);
+            break;
+          case 'pass':
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+            gain.gain.setValueAtTime(0.8, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.stop(now + 0.08);
+            break;
+          case 'goal':
+            // ascending jingle
+            let times = [0, 0.3, 0.6, 0.9, 1.2];
+            let freqs = [440, 540, 640, 740, 840];
+            times.forEach((t, i) => {
+              osc.frequency.setValueAtTime(freqs[i], now + t);
+            });
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+            osc.stop(now + 1.5);
+            break;
+          case 'whistle':
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.linearRampToValueAtTime(1200, now + 0.15);
+            gain.gain.setValueAtTime(1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.stop(now + 0.3);
+            break;
+          case 'coin':
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            gain.gain.setValueAtTime(0.8, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.stop(now + 0.1);
+            break;
+          default: return;
+        }
+        osc.start(now);
+      } catch(e) {
+        console.warn('Sound play failed:', e);
+      }
     }
 
     function playBackgroundMusic() {
       if (!musicEnabled) return;
       if (!audioCtx) initAudio();
       if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(e => {});
+      }
 
-      // C major scale: C4=261.63, D4=293.66, E4=329.63, F4=349.23, G4=392.00, A4=440.00, B4=493.88, C5=523.25
       const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
       let index = 0;
 
       function playNext() {
         if (!musicEnabled) return;
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = notes[index % notes.length];
-        gain.gain.setValueAtTime(0.5, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.start(now);
-        osc.stop(now + 0.5);
-        index++;
+        try {
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = notes[index % notes.length];
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.5);
+          index++;
+        } catch(e) {
+          console.warn('Background music note failed:', e);
+        }
       }
 
-      // Clear any existing interval
       if (musicInterval) clearInterval(musicInterval);
-      musicInterval = setInterval(playNext, 600); // 0.6s between notes
+      musicInterval = setInterval(playNext, 600);
     }
 
     function toggleMusic() {
