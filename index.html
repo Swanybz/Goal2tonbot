@@ -683,7 +683,7 @@
   <!-- ==================== GOAL CELEBRATION OVERLAY ==================== -->
   <div id="celebration-overlay" class="celebration-overlay"><div class="celebration-content"><div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div><div class="text-8xl mb-4 goal-celebration">⚽</div><h2 id="goal-title" class="game-title text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 mb-4">GOAL!</h2><div class="flex items-center justify-center gap-2 text-2xl"><span class="text-cyan-400">+<span id="goal-reward">100</span></span><span class="text-sm">GP</span><svg class="ton-logo-big" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg></div></div></div>
 
-  <!-- ==================== GAME OVER OVERLAY (with Back to Menu) ==================== -->
+  <!-- ==================== GAME OVER OVERLAY (Back to Menu button removed) ==================== -->
   <div id="gameover-overlay" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
     <h2 id="gameover-title" class="game-title text-3xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">MATCH COMPLETE</h2>
@@ -695,8 +695,7 @@
     <div id="ad-unlock-notice" class="hidden mb-4 p-4 bg-purple-500/20 border border-purple-500/50 rounded-xl"><p class="text-sm text-purple-300 font-semibold mb-2">🎁 Unlock Next Match</p><p class="text-xs text-gray-400">Watch an ad to play again or wait for energy regeneration</p></div>
     <div class="space-y-3">
      <button onclick="showAdReward()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl font-bold uppercase"> 📺 Watch Ad (+200 GP & 20⚡) </button>
-     <!-- Back to Menu button added -->
-     <button onclick="closeGameOver()" class="w-full py-3 bg-gradient-to-r from-gray-500 to-gray-700 rounded-xl font-bold uppercase"> ↩ Back to Menu </button>
+     <!-- Back to Menu button removed -->
     </div>
    </div>
   </div>
