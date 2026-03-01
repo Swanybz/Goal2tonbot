@@ -1802,12 +1802,18 @@
             clearInterval(adInterval);
             document.getElementById('ad-screen').classList.remove('active');
             showInlineMessage('Ad failed to play. Please try again.', 'warning');
+            showScreen('menu-screen'); // Return to menu even if ad fails
           }
           return;
         }
         if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
       }).catch(e => {
-        if (!adCanceled) { clearInterval(adInterval); document.getElementById('ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
+        if (!adCanceled) {
+          clearInterval(adInterval);
+          document.getElementById('ad-screen').classList.remove('active');
+          showInlineMessage('Ad not completed. Try again.', 'warning');
+          showScreen('menu-screen'); // Return to menu on error
+        }
       });
     }
 
