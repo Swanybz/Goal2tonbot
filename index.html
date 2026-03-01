@@ -660,10 +660,21 @@
     <button onclick="showConvertModal()" class="mt-4 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg font-bold text-sm"> Convert GP to TON </button>
    </div>
    <div class="mb-6"><label class="block text-sm font-semibold mb-2">Your TON Wallet Address</label><div class="flex gap-2"><input type="text" id="wallet-input" placeholder="UQxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white text-sm"> <button onclick="saveWalletAddress()" class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg font-bold text-sm whitespace-nowrap"> Save </button></div><p id="wallet-status" class="text-xs mt-2 text-gray-400"></p></div>
-   <div class="stat-card rounded-xl p-5 mb-4"><h3 class="font-bold mb-3">Withdrawal Info</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span class="text-gray-400">Minimum:</span><span class="font-bold">0.0100 TON</span></div><div class="flex justify-between"><span class="text-gray-400">Base Fee:</span><span class="font-bold">0.0001 TON</span></div><div class="flex justify-between"><span class="text-gray-400">Withdrawals today:</span><span id="daily-withdraw-count" class="font-bold text-yellow-400">0</span></div><div class="flex justify-between"><span class="text-gray-400">Current fee:</span><span id="current-fee" class="font-bold text-yellow-400">0.0001 TON</span></div></div></div>
+   <div class="stat-card rounded-xl p-5 mb-4">
+    <h3 class="font-bold mb-3">Withdrawal Info</h3>
+    <div class="space-y-2 text-sm">
+     <div class="flex justify-between"><span class="text-gray-400">Minimum:</span><span class="font-bold">0.0100 TON</span></div>
+     <div class="flex justify-between"><span class="text-gray-400">Base Fee:</span><span class="font-bold">0.0001 TON</span></div>
+     <div class="flex justify-between"><span class="text-gray-400">Withdrawals today:</span><span id="daily-withdraw-count" class="font-bold text-yellow-400">0</span></div>
+     <div class="flex justify-between"><span class="text-gray-400">Current fee:</span><span id="current-fee" class="font-bold text-yellow-400">0.0001 TON</span></div>
+     <div class="flex justify-between"><span class="text-gray-400">Ads watched:</span><span id="menu-ads-wallet" class="font-bold text-purple-400">0</span></div>
+     <div class="flex justify-between"><span class="text-gray-400">Ads required:</span><span class="font-bold text-purple-400">15</span></div>
+    </div>
+   </div>
    <button onclick="showWithdrawModal()" id="btn-withdraw" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl font-bold uppercase tracking-wider transition-all" disabled> 💸 Withdraw TON </button>
+   <p id="withdraw-lock-message" class="text-xs text-center text-yellow-400 mt-2"></p>
    <p class="text-xs text-center text-gray-500 mt-2">Wallet address required to withdraw</p>
-   <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg"><p class="text-xs text-blue-300"><strong>Note:</strong> Convert Goal Points (GP) to TON before withdrawing. 1000 GP = 0.01 TON. Fee increases with each daily withdrawal (0.0001 → 0.00011 → 0.000121 ...).</p></div>
+   <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg"><p class="text-xs text-blue-300"><strong>Note:</strong> Convert Goal Points (GP) to TON before withdrawing. 1000 GP = 0.01 TON. Fee increases with each daily withdrawal (first 0.0005, subsequent 0.0020).</p></div>
   </div>
 
   <!-- ==================== CONVERT GP MODAL ==================== -->
@@ -681,7 +692,19 @@
   <div id="var-overlay" class="celebration-overlay"><div class="celebration-content"><div class="var-overlay rounded-2xl overflow-hidden mb-4" style="width:300px;height:200px;"><div id="var-field-clone"></div></div><h2 class="game-title text-4xl font-black text-cyan-400 mb-2">VAR REVIEW</h2><p class="text-xl text-gray-300">Checking goal validity...</p><div class="mt-4 flex items-center justify-center gap-2"><div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div><div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse" style="animation-delay:0.2s"></div><div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse" style="animation-delay:0.4s"></div></div></div></div>
 
   <!-- ==================== GOAL CELEBRATION OVERLAY ==================== -->
-  <div id="celebration-overlay" class="celebration-overlay"><div class="celebration-content"><div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div><div class="text-8xl mb-4 goal-celebration">⚽</div><h2 id="goal-title" class="game-title text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 mb-4">GOAL!</h2><div class="flex items-center justify-center gap-2 text-2xl"><span class="text-cyan-400">+<span id="goal-reward">100</span></span><span class="text-sm">GP</span><svg class="ton-logo-big" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg></div></div></div>
+  <div id="celebration-overlay" class="celebration-overlay">
+   <div class="celebration-content">
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+    <div class="text-8xl mb-4 goal-celebration">⚽</div>
+    <h2 id="goal-title" class="game-title text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 mb-4">GOAL!</h2>
+    <div class="flex items-center justify-center gap-2 text-2xl">
+     <span class="text-cyan-400">+<span id="goal-reward">100</span></span>
+     <span class="text-sm">GP</span>
+     <span id="goal-tier-badge" class="ml-2 text-sm font-bold px-2 py-1 rounded-full"></span>
+     <svg class="ton-logo-big" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg>
+    </div>
+   </div>
+  </div>
 
   <!-- ==================== GAME OVER OVERLAY (Back to Menu button removed) ==================== -->
   <div id="gameover-overlay" class="celebration-overlay">
@@ -994,7 +1017,6 @@
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
-    const GOAL_GP = 100;
     const AD_GP_BONUS = 200;
     const WIN_BONUS_GP = 200;
     const REFERRAL_TON = 0.0010;
@@ -1008,8 +1030,9 @@
     const SUPER_PLAYER_COST_GP = 5000;
     const GP_TO_TON_RATE = 1000;
     const MIN_WITHDRAW_TON = 0.01;
-    const BASE_WITHDRAW_FEE = 0.0001;
-    const FEE_MULTIPLIER = 1.1;
+    const ADS_REQUIRED_FOR_WITHDRAW = 15;
+    const FEE_FIRST = 0.0005;
+    const FEE_SUBSEQUENT = 0.0020;
 
     const defaultConfig = {
       game_title: 'TON FOOTBALL',
@@ -1031,6 +1054,9 @@
       maxEnergy: playerData.player_level >= 2 ? 150 : MAX_ENERGY
     };
 
+    // Pending match result (to be applied after ad)
+    let pendingMatchResult = null;
+
     let userPlayers = [], aiPlayers = [], ball = { x:50, y:50, vx:0, vy:0 };
     let joystickActive = false, joystickDirection = { x:0, y:0 };
     let buttonStates = { kick: false, pass: false, sprint: false };
@@ -1038,6 +1064,12 @@
     let adCanceled = false;
     let exitAdCanceled = false;
     let adTypeIndex = 0;
+
+    function getGpForGoal(goalNumber) {
+      if (goalNumber <= 20) return 100;
+      if (goalNumber <= 30) return 20;
+      return 5;
+    }
 
     function preloadAd() {
       if (typeof show_10656450 === 'function') {
@@ -1110,11 +1142,26 @@
       const levelCost = (LEVEL_UP_BASE_COST_GP * level).toFixed(0);
       document.getElementById('level-cost').textContent = levelCost;
 
+      // Wallet screen specific
+      if (document.getElementById('menu-ads-wallet')) {
+        document.getElementById('menu-ads-wallet').textContent = adsWatched;
+      }
+
       if (playerData.wallet_address) {
         document.getElementById('wallet-input').value = playerData.wallet_address;
         document.getElementById('wallet-status').textContent = '✅ Wallet connected';
         document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
-        document.getElementById('btn-withdraw').disabled = false;
+        // Withdraw button enabled only if ads >= 15
+        const canWithdraw = adsWatched >= ADS_REQUIRED_FOR_WITHDRAW;
+        document.getElementById('btn-withdraw').disabled = !canWithdraw;
+        if (!canWithdraw) {
+          document.getElementById('withdraw-lock-message').textContent = `⚠️ Requires ${ADS_REQUIRED_FOR_WITHDRAW} ads watched. You have watched ${adsWatched}.`;
+        } else {
+          document.getElementById('withdraw-lock-message').textContent = '';
+        }
+      } else {
+        document.getElementById('btn-withdraw').disabled = true;
+        document.getElementById('withdraw-lock-message').textContent = '';
       }
 
       if (playerData.super_player_unlocked) {
@@ -1192,11 +1239,18 @@
         const entry = document.createElement('div');
         entry.className = `leaderboard-entry flex items-center justify-between p-4 rounded-xl ${isCurrentUser ? 'bg-cyan-500/20 border-2 border-cyan-500' : 'bg-white/5'}`;
         const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index+1}`;
+        // Add badge for high scorers
+        let badge = '';
+        if (player.goals_scored >= 31) {
+          badge = '<span class="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded-full">🔥 LEGENDARY</span>';
+        } else if (player.goals_scored >= 21) {
+          badge = '<span class="ml-2 text-xs bg-purple-500 text-white px-2 py-1 rounded-full">✨ ELITE</span>';
+        }
         entry.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="text-2xl font-bold ${index<3?'':'text-gray-400'}">${rankEmoji}</div>
             <div>
-              <div class="font-bold ${isCurrentUser?'text-cyan-400':''}">${player.username||'Player'} ${isCurrentUser?'(You)':''}</div>
+              <div class="font-bold ${isCurrentUser?'text-cyan-400':''}">${player.username||'Player'} ${isCurrentUser?'(You)':''} ${badge}</div>
               <div class="text-xs text-gray-400">${player.wins||0}W ${player.draws||0}D ${player.losses||0}L</div>
             </div>
           </div>
@@ -1205,7 +1259,7 @@
               <svg class="ton-logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg>
               <span class="font-bold text-cyan-400">${(player.total_coins||0).toFixed(4)}</span>
             </div>
-            <div class="text-xs text-gray-400">⚽ ${player.goal_points||0} GP</div>
+            <div class="text-xs text-gray-400">⚽ ${player.goals_scored||0} GP</div>
           </div>
         `;
         list.appendChild(entry);
@@ -1556,10 +1610,18 @@
         if (team === 'user') {
           gameState.userScore++;
           gameState.goalsThisMatch++;
-          playerData.goal_points = (playerData.goal_points || 0) + GOAL_GP;
+          // Calculate GP based on total goals (career + this match so far)
+          let totalGoalsBefore = playerData.goals_scored + gameState.goalsThisMatch - 1; // before this goal
+          let gpEarned = getGpForGoal(totalGoalsBefore + 1);
+          playerData.goal_points = (playerData.goal_points || 0) + gpEarned;
           updateUser(playerData);
-          sendToBot('goal_scored', { match_id: Date.now(), goal_number: gameState.goalsThisMatch, gp_earned: GOAL_GP });
-          document.getElementById('goal-reward').textContent = GOAL_GP;
+          sendToBot('goal_scored', { match_id: Date.now(), goal_number: gameState.goalsThisMatch, gp_earned: gpEarned });
+          document.getElementById('goal-reward').textContent = gpEarned;
+          // Show tier badge
+          let badgeEl = document.getElementById('goal-tier-badge');
+          if (totalGoalsBefore + 1 <= 20) badgeEl.textContent = '';
+          else if (totalGoalsBefore + 1 <= 30) { badgeEl.textContent = '✨ ELITE'; badgeEl.className = 'ml-2 text-sm font-bold px-2 py-1 rounded-full bg-purple-500 text-white'; }
+          else { badgeEl.textContent = '🔥 LEGENDARY'; badgeEl.className = 'ml-2 text-sm font-bold px-2 py-1 rounded-full bg-yellow-500 text-black'; }
           playSound('goal');
           showCelebration();
         } else {
@@ -1656,6 +1718,7 @@
         document.getElementById('gameover-title').textContent = 'DRAW 🤝';
       }
       playSound('whistle');
+      // Calculate total GP but don't add yet – store as pending
       const totalGP = gameState.goalsThisMatch * GOAL_GP + bonusGP;
       document.getElementById('final-user-score').textContent = gameState.userScore;
       document.getElementById('final-ai-score').textContent = gameState.aiScore;
@@ -1664,26 +1727,44 @@
       if (gameState.energy < ENERGY_COST_PER_MATCH) document.getElementById('ad-unlock-notice').classList.remove('hidden');
       else document.getElementById('ad-unlock-notice').classList.add('hidden');
       document.getElementById('gameover-overlay').classList.add('active');
-      playerData.goal_points = (playerData.goal_points || 0) + totalGP;
-      await saveStats(result);
-      sendToBot('match_end', { result, user_score: gameState.userScore, ai_score: gameState.aiScore, gp_earned: totalGP });
+      
+      // Store match result to be applied after ad
+      pendingMatchResult = {
+        result: result,
+        userScore: gameState.userScore,
+        aiScore: gameState.aiScore,
+        goalsThisMatch: gameState.goalsThisMatch,
+        totalGP: totalGP
+      };
+      
+      // Do NOT update playerData or send webhook yet
       preloadAd();
       // Clear saved game state after match ends
       clearGameState();
     }
 
-    async function saveStats(result) {
-      if (!playerData) return;
-      playerData.goals_scored = (playerData.goals_scored || 0) + gameState.goalsThisMatch;
+    async function applyPendingMatchResult() {
+      if (!pendingMatchResult) return;
+      playerData.goal_points = (playerData.goal_points || 0) + pendingMatchResult.totalGP;
+      playerData.goals_scored = (playerData.goals_scored || 0) + pendingMatchResult.goalsThisMatch;
       playerData.games_played = (playerData.games_played || 0) + 1;
-      playerData.wins = (playerData.wins || 0) + (result === 'win' ? 1 : 0);
-      playerData.losses = (playerData.losses || 0) + (result === 'loss' ? 1 : 0);
-      playerData.draws = (playerData.draws || 0) + (result === 'draw' ? 1 : 0);
-      playerData.high_score = Math.max(playerData.high_score || 0, gameState.userScore);
-      playerData.player_energy = gameState.energy;
+      playerData.wins = (playerData.wins || 0) + (pendingMatchResult.result === 'win' ? 1 : 0);
+      playerData.losses = (playerData.losses || 0) + (pendingMatchResult.result === 'loss' ? 1 : 0);
+      playerData.draws = (playerData.draws || 0) + (pendingMatchResult.result === 'draw' ? 1 : 0);
+      playerData.high_score = Math.max(playerData.high_score || 0, pendingMatchResult.userScore);
+      // player_energy already updated in gameState, will be saved in updateUser later
       playerData.last_played = new Date().toISOString();
       updateUser(playerData);
+      sendToBot('match_end', {
+        result: pendingMatchResult.result,
+        user_score: pendingMatchResult.userScore,
+        ai_score: pendingMatchResult.aiScore,
+        gp_earned: pendingMatchResult.totalGP
+      });
+      pendingMatchResult = null;
     }
+
+    async function saveStats(result) { /* no longer used directly */ }
 
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
@@ -1732,6 +1813,10 @@
       playerData.goal_points = (playerData.goal_points || 0) + AD_GP_BONUS;
       playerData.ads_watched = (playerData.ads_watched || 0) + 1;
       playerData.player_energy = newEnergy;
+      // Apply pending match result if exists
+      if (pendingMatchResult) {
+        await applyPendingMatchResult();
+      }
       updateUser(playerData);
       document.getElementById('ad-screen').classList.remove('active');
       showScreen('menu-screen');
@@ -1824,14 +1909,10 @@
     function computeWithdrawFee() {
       const today = new Date().toDateString();
       if (playerData.last_withdraw_date !== today) {
-        return BASE_WITHDRAW_FEE;
+        return FEE_FIRST;
       }
       const count = playerData.daily_withdraw_count || 0;
-      let fee = BASE_WITHDRAW_FEE;
-      for (let i = 0; i < count; i++) {
-        fee = fee * FEE_MULTIPLIER;
-      }
-      return fee;
+      return count === 0 ? FEE_FIRST : FEE_SUBSEQUENT;
     }
 
     async function saveWalletAddress() {
@@ -1849,6 +1930,10 @@
 
     function showWithdrawModal() {
       if (!playerData?.wallet_address) { showInlineMessage('Please add your wallet address first', 'warning'); return; }
+      if ((playerData.ads_watched || 0) < ADS_REQUIRED_FOR_WITHDRAW) {
+        showInlineMessage(`You need to watch ${ADS_REQUIRED_FOR_WITHDRAW} ads to withdraw. You have watched ${playerData.ads_watched || 0}.`, 'warning');
+        return;
+      }
       document.getElementById('withdraw-modal').classList.add('active');
       document.getElementById('withdraw-balance').textContent = (playerData?.total_coins || 0).toFixed(4);
       document.getElementById('withdraw-amount').value = '';
