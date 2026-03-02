@@ -1998,12 +1998,16 @@
         msgEl.textContent = `❌ Insufficient balance (including fee ${fee.toFixed(6)} TON)`;
         return;
       }
+      // Deduct balance, update daily count, then RESET ads_watched to 0 for next withdrawal cycle
       playerData.total_coins = balance - amount - fee;
       playerData.daily_withdraw_count = (playerData.daily_withdraw_count || 0) + 1;
       playerData.last_withdraw_date = today;
+      playerData.ads_watched = 0;  // Reset ads counter after successful withdrawal
+
       updateUser(playerData);
+
       msgEl.className = 'mt-4 p-3 rounded-lg bg-green-500/20 text-green-400';
-      msgEl.textContent = `✅ Withdrawal request submitted! ${amount.toFixed(4)} TON will be sent to your wallet within 24 hours. Fee: ${fee.toFixed(6)} TON.`;
+      msgEl.textContent = `✅ Withdrawal successful! ${amount.toFixed(4)} TON sent. Fee: ${fee.toFixed(6)} TON. Score more goals and watch 15 more ads to unlock your next payout.`;
       playSound('coin');
       sendToBot('withdraw_request', { amount, address: playerData.wallet_address, fee });
       setTimeout(() => { closeWithdrawModal(); showScreen('menu-screen'); }, 3000);
