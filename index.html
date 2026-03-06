@@ -7,9 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Monetag SDK (both pop and rewarded interstitial) -->
+  <!-- Monetag SDK (pop and rewarded interstitial) -->
   <script src='//libtl.com/sdk.js' data-zone='10656450' data-sdk='show_10656450'></script>
   <script src="https://monetag.com/tag.min.js?zoneid=10656450" data-calculate="true"></script>
+  <!-- AdsGram SDK (rewarded and interstitial) -->
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="/_sdk/data_sdk.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&amp;family=Rajdhani:wght@400;500;700&amp;display=swap" rel="stylesheet">
@@ -600,7 +602,7 @@
    </div>
   </div>
 
-  <!-- ==================== EXIT AD SCREEN (NO REWARD) ==================== -->
+  <!-- ==================== EXIT AD SCREEN (AdsGram Interstitial) ==================== -->
   <div id="exit-ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
     <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Advertisement</h2><p class="text-gray-400 mb-6" id="exit-ad-message">Watching ad to exit, please wait...</p>
@@ -724,10 +726,10 @@
    </div>
   </div>
 
-  <!-- ==================== AD SCREEN ==================== -->
+  <!-- ==================== AD SCREEN (AdsGram Rewarded) ==================== -->
   <div id="ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
-    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Monetag Advertisement</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
+    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">AdsGram Advertisement</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
     <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden"><div id="ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width:0%; transition:width 1s linear;"></div></div>
     <div class="text-4xl font-bold text-cyan-400 mb-2"><span id="ad-timer">30</span>s</div>
     <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30"><div class="flex items-center justify-center gap-2 mb-1"><span class="text-sm text-gray-300">🎁 Earn</span><svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg><span class="text-cyan-400 font-bold">200 GP + 20⚡</span></div></div>
@@ -1074,7 +1076,11 @@
     let gameTimerInterval, lastTime = 0, animationFrameId = null;
     let adCanceled = false;
     let exitAdCanceled = false;
-    let adTypeIndex = 0;
+    let adTypeIndex = 0; // kept for Monetag preload but not used for showing
+
+    // AdsGram controllers
+    let rewardedAdController = null;
+    let interstitialAdController = null;
 
     function getGpForGoal(goalNumber) {
       if (goalNumber <= 20) return 100;
@@ -1107,6 +1113,12 @@
             ['welcome_message', cfg.welcome_message || defaultConfig.welcome_message]
           ])
         });
+      }
+      // Initialize AdsGram controllers
+      if (window.Adsgram) {
+        // Replace with your actual block IDs from AdsGram partner panel
+        rewardedAdController = window.Adsgram.init({ blockId: "24484" }); // e.g. "123456"
+        interstitialAdController = window.Adsgram.init({ blockId: "int-24486" }); // must start with "int-"
       }
       preloadAd();
     }
@@ -1162,7 +1174,6 @@
         document.getElementById('wallet-input').value = playerData.wallet_address;
         document.getElementById('wallet-status').textContent = '✅ Wallet connected';
         document.getElementById('wallet-status').className = 'text-xs mt-2 text-green-400';
-        // Withdraw button is always enabled now; we check conditions in showWithdrawModal
       } else {
         document.getElementById('wallet-status').textContent = 'Enter your wallet address';
         document.getElementById('wallet-status').className = 'text-xs mt-2 text-gray-400';
@@ -1320,6 +1331,7 @@
       }, 1000);
     }
 
+    // Show exit ad using AdsGram interstitial
     function showExitAd() {
       document.getElementById('exit-confirm-overlay').classList.remove('active');
       document.getElementById('exit-ad-screen').classList.add('active');
@@ -1327,6 +1339,7 @@
       let timeLeft = AD_DURATION;
       const timerEl = document.getElementById('exit-ad-timer');
       const progressEl = document.getElementById('exit-ad-progress');
+      const startTime = Date.now();
       const adInterval = setInterval(() => {
         if (exitAdCanceled) { clearInterval(adInterval); return; }
         timeLeft--;
@@ -1335,22 +1348,48 @@
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
 
-      const usePop = (adTypeIndex % 2 === 0);
-      adTypeIndex++;
-      if (usePop && typeof show_10656450 === 'function') {
-        show_10656450('pop').then(() => {
-          if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
-        }).catch(e => {
-          if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
-        });
-      } else if (typeof show_10656450 === 'function') {
-        show_10656450().then(() => {
-          if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
-        }).catch(e => {
-          if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
-        });
+      if (interstitialAdController) {
+        interstitialAdController.show()
+          .then((result) => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed < 5) {
+              if (!exitAdCanceled) {
+                clearInterval(adInterval);
+                document.getElementById('exit-ad-screen').classList.remove('active');
+                showInlineMessage('Ad failed to play. Please try again.', 'warning');
+                document.getElementById('exit-confirm-overlay').classList.add('active');
+              }
+              return;
+            }
+            if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
+          })
+          .catch((error) => {
+            if (!exitAdCanceled) {
+              clearInterval(adInterval);
+              document.getElementById('exit-ad-screen').classList.remove('active');
+              showInlineMessage('Ad not completed. Try again.', 'warning');
+              document.getElementById('exit-confirm-overlay').classList.add('active');
+            }
+          });
       } else {
-        setTimeout(() => { if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); } }, AD_DURATION * 1000);
+        // Fallback to Monetag if AdsGram not loaded
+        const usePop = (adTypeIndex % 2 === 0);
+        adTypeIndex++;
+        if (usePop && typeof show_10656450 === 'function') {
+          show_10656450('pop').then(() => {
+            if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
+          }).catch(e => {
+            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
+          });
+        } else if (typeof show_10656450 === 'function') {
+          show_10656450().then(() => {
+            if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
+          }).catch(e => {
+            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
+          });
+        } else {
+          setTimeout(() => { if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); } }, AD_DURATION * 1000);
+        }
       }
     }
 
@@ -1770,6 +1809,7 @@
 
     async function saveStats(result) { /* no longer used directly */ }
 
+    // Show rewarded ad using AdsGram rewarded
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
       document.getElementById('ad-screen').classList.add('active');
@@ -1786,35 +1826,60 @@
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
 
-      const usePop = (adTypeIndex % 2 === 0);
-      adTypeIndex++;
-      const adPromise = usePop && typeof show_10656450 === 'function'
-        ? show_10656450('pop')
-        : typeof show_10656450 === 'function'
-        ? show_10656450()
-        : new Promise(resolve => setTimeout(resolve, AD_DURATION * 1000));
+      if (rewardedAdController) {
+        rewardedAdController.show()
+          .then(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed < 5) {
+              if (!adCanceled) {
+                clearInterval(adInterval);
+                document.getElementById('ad-screen').classList.remove('active');
+                showInlineMessage('Ad failed to play. Please try again.', 'warning');
+                showScreen('menu-screen');
+              }
+              return;
+            }
+            if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
+          })
+          .catch((error) => {
+            if (!adCanceled) {
+              clearInterval(adInterval);
+              document.getElementById('ad-screen').classList.remove('active');
+              showInlineMessage('Ad not completed. Try again.', 'warning');
+              showScreen('menu-screen');
+            }
+          });
+      } else {
+        // Fallback to Monetag if AdsGram not loaded
+        const usePop = (adTypeIndex % 2 === 0);
+        adTypeIndex++;
+        const adPromise = usePop && typeof show_10656450 === 'function'
+          ? show_10656450('pop')
+          : typeof show_10656450 === 'function'
+          ? show_10656450()
+          : new Promise(resolve => setTimeout(resolve, AD_DURATION * 1000));
 
-      adPromise.then(() => {
-        const elapsed = (Date.now() - startTime) / 1000;
-        // If ad finishes too quickly (< 5 seconds), consider it a failure (likely no ad shown)
-        if (elapsed < 5) {
+        adPromise.then(() => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          if (elapsed < 5) {
+            if (!adCanceled) {
+              clearInterval(adInterval);
+              document.getElementById('ad-screen').classList.remove('active');
+              showInlineMessage('Ad failed to play. Please try again.', 'warning');
+              showScreen('menu-screen');
+            }
+            return;
+          }
+          if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
+        }).catch(e => {
           if (!adCanceled) {
             clearInterval(adInterval);
             document.getElementById('ad-screen').classList.remove('active');
-            showInlineMessage('Ad failed to play. Please try again.', 'warning');
-            showScreen('menu-screen'); // Return to menu even if ad fails
+            showInlineMessage('Ad not completed. Try again.', 'warning');
+            showScreen('menu-screen');
           }
-          return;
-        }
-        if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
-      }).catch(e => {
-        if (!adCanceled) {
-          clearInterval(adInterval);
-          document.getElementById('ad-screen').classList.remove('active');
-          showInlineMessage('Ad not completed. Try again.', 'warning');
-          showScreen('menu-screen'); // Return to menu on error
-        }
-      });
+        });
+      }
     }
 
     function cancelAd() {
