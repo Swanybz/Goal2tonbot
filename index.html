@@ -729,7 +729,7 @@
   <!-- ==================== AD SCREEN (AdsGram Rewarded) ==================== -->
   <div id="ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
-    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">AdsGram Advertisement</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
+    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Advertisement</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
     <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden"><div id="ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width:0%; transition:width 1s linear;"></div></div>
     <div class="text-4xl font-bold text-cyan-400 mb-2"><span id="ad-timer">30</span>s</div>
     <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30"><div class="flex items-center justify-center gap-2 mb-1"><span class="text-sm text-gray-300">🎁 Earn</span><svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg><span class="text-cyan-400 font-bold">200 GP + 20⚡</span></div></div>
@@ -1331,7 +1331,7 @@
       }, 1000);
     }
 
-    // Show exit ad using AdsGram interstitial
+    // Show exit ad – randomly choose AdsGram or Monetag
     function showExitAd() {
       document.getElementById('exit-confirm-overlay').classList.remove('active');
       document.getElementById('exit-ad-screen').classList.add('active');
@@ -1348,7 +1348,10 @@
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
 
-      if (interstitialAdController) {
+      // Randomly pick AdsGram (50%) or Monetag (50%)
+      const useAdsGram = Math.random() < 0.5;
+
+      if (useAdsGram && interstitialAdController) {
         interstitialAdController.show()
           .then((result) => {
             const elapsed = (Date.now() - startTime) / 1000;
@@ -1372,20 +1375,20 @@
             }
           });
       } else {
-        // Fallback to Monetag if AdsGram not loaded
+        // Use Monetag
         const usePop = (adTypeIndex % 2 === 0);
         adTypeIndex++;
         if (usePop && typeof show_10656450 === 'function') {
           show_10656450('pop').then(() => {
             if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
           }).catch(e => {
-            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
+            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); document.getElementById('exit-confirm-overlay').classList.add('active'); }
           });
         } else if (typeof show_10656450 === 'function') {
           show_10656450().then(() => {
             if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
           }).catch(e => {
-            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); }
+            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); document.getElementById('exit-confirm-overlay').classList.add('active'); }
           });
         } else {
           setTimeout(() => { if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); } }, AD_DURATION * 1000);
@@ -1809,7 +1812,7 @@
 
     async function saveStats(result) { /* no longer used directly */ }
 
-    // Show rewarded ad using AdsGram rewarded
+    // Show rewarded ad – randomly choose AdsGram or Monetag
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
       document.getElementById('ad-screen').classList.add('active');
@@ -1826,7 +1829,10 @@
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
 
-      if (rewardedAdController) {
+      // Randomly pick AdsGram (50%) or Monetag (50%)
+      const useAdsGram = Math.random() < 0.5;
+
+      if (useAdsGram && rewardedAdController) {
         rewardedAdController.show()
           .then(() => {
             const elapsed = (Date.now() - startTime) / 1000;
@@ -1850,7 +1856,7 @@
             }
           });
       } else {
-        // Fallback to Monetag if AdsGram not loaded
+        // Use Monetag
         const usePop = (adTypeIndex % 2 === 0);
         adTypeIndex++;
         const adPromise = usePop && typeof show_10656450 === 'function'
@@ -2179,6 +2185,35 @@
           case 'ArrowUp': case 'w': case 'W': case 'ArrowDown': case 's': case 'S': joystickDirection.y = 0; break;
           case 'ArrowLeft': case 'a': case 'A': case 'ArrowRight': case 'd': case 'D': joystickDirection.x = 0; break;
           case 'Shift': buttonStates.sprint = false; break;
+        }
+      });
+    }
+
+    // -------------------- Listen for bot messages (joined status, refCode) --------------------
+    if (tg) {
+      tg.onEvent('message', (data) => {
+        // data is the message text sent by the bot (should be JSON)
+        try {
+          const msg = JSON.parse(data);
+          if (msg.joined !== undefined) {
+            const joined = msg.joined === '1' || msg.joined === true;
+            joinedChannel = joined;
+            playerData.joined_channel = joined;
+            updateUser(playerData);
+            if (joined) {
+              document.getElementById('join-channel-banner').classList.add('hidden');
+            } else {
+              document.getElementById('join-channel-banner').classList.remove('hidden');
+            }
+            updateStatsDisplay(); // updates play button state
+          }
+          if (msg.refCode) {
+            // Optionally store the referral code (e.g., as incomingReferrerId)
+            incomingReferrerId = msg.refCode;
+            // You could also update UI if needed, but referral screen already shows code entry
+          }
+        } catch (e) {
+          console.warn('Failed to parse bot message:', e);
         }
       });
     }
