@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Monetag SDK (pop and rewarded interstitial) -->
+  <!-- Monetag SDK (in-app banner only) -->
   <script src='//libtl.com/sdk.js' data-zone='10656450' data-sdk='show_10656450'></script>
   <script src="https://monetag.com/tag.min.js?zoneid=10656450" data-calculate="true"></script>
   <!-- AdsGram SDK (rewarded and interstitial) -->
@@ -487,6 +487,15 @@
       font-family: 'Orbitron', monospace;
       letter-spacing: 2px;
     }
+    
+    /* Avatar styles */
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #00aaff;
+      object-fit: cover;
+    }
   </style>
   <style>@view-transition { navigation: auto; }</style>
  </head>
@@ -494,37 +503,30 @@
   <!-- ==================== MENU SCREEN ==================== -->
   <div id="menu-screen" class="screen active flex-col items-center justify-center min-h-full p-6">
    <div class="text-center mb-6">
-    <svg class="w-24 h-24 mx-auto mb-4" viewbox="0 0 100 100"><defs>
-      <lineargradient id="tonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-       <stop offset="0%" style="stop-color:#0088CC" />
-       <stop offset="50%" style="stop-color:#229ED9" />
-       <stop offset="100%" style="stop-color:#0088CC" />
-      </lineargradient>
-      <radialgradient id="shine">
-       <stop offset="0%" style="stop-color:#fff;stop-opacity:0.8" />
-       <stop offset="100%" style="stop-color:#fff;stop-opacity:0" />
-      </radialgradient>
-     </defs> <circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /> <ellipse cx="35" cy="35" rx="15" ry="12" fill="url(#shine)" opacity="0.4" /> <text x="50" y="42" text-anchor="middle" fill="white" font-size="18" font-weight="900" font-family="Arial">
-      TON
-     </text> <path d="M 30 55 L 70 55 M 30 62 L 70 62 M 30 69 L 70 69" stroke="white" stroke-width="3" opacity="0.3" />
+    <!-- Professional TON SVG icon -->
+    <svg class="w-24 h-24 mx-auto mb-4" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" />
+      <defs>
+        <linearGradient id="tonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0088CC" />
+          <stop offset="50%" stop-color="#229ED9" />
+          <stop offset="100%" stop-color="#0088CC" />
+        </linearGradient>
+      </defs>
+      <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900" font-family="Arial">T</text>
     </svg>
     <h1 id="main-title" class="game-title text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 mb-2">TON FOOTBALL</h1>
     <p id="welcome-msg" class="text-cyan-300 text-sm">Play &amp; Earn Real TON Crypto</p>
     <p class="text-gray-500 text-xs mt-1">1 TON ≈ $5.20 USD</p>
    </div>
 
-   <!-- Force Join Channel Banner -->
-   <div id="join-channel-banner" class="hidden w-full max-w-sm mb-4 p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-center">
-    <p class="font-bold mb-2">🔥 Join our channel to play!</p>
-    <a href="https://t.me/Goal2Ton_payout" target="_blank" class="inline-block px-4 py-2 bg-white text-purple-700 rounded-lg font-semibold mb-2">Join @Goal2Ton_payout</a>
-    <button onclick="verifyChannelJoin()" class="w-full mt-2 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-semibold">I've Joined – Verify</button>
-   </div>
+   <!-- Channel join banner REMOVED -->
 
    <div class="stat-card rounded-2xl p-4 mb-6 w-full max-w-sm">
     <div class="grid grid-cols-2 gap-3 mb-3">
      <div class="text-center">
       <div class="flex items-center justify-center gap-1 mb-1">
-       <svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /> <text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg>
+       <svg class="ton-logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" stroke="#00AAFF" stroke-width="2" /><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg>
        <span id="menu-coins" class="text-2xl font-bold text-cyan-400">0.0000</span>
       </div><span class="text-gray-400 text-xs">TON Balance</span>
      </div>
@@ -558,8 +560,9 @@
     <button onclick="toggleMusic()" id="music-toggle-btn" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl font-semibold transition-all"> 🎵 Music: ON </button>
    </div>
    <div class="text-center text-xs text-gray-500">
-    <p>📺 Watch ads: <span id="menu-ads">0</span>/10 for bonus</p>
+    <p>📺 Watch ads: <span id="menu-ads">0</span>/15 for withdrawal</p>
     <p class="mt-1">👥 Referrals: <span id="menu-referrals">0</span></p>
+    <p class="mt-2 text-cyan-400">⚡ Game powered by @Goal2Ton_bot</p>
    </div>
   </div>
 
@@ -567,12 +570,17 @@
   <div id="game-screen" class="screen flex-col h-full">
    <div class="flex-shrink-0 bg-gradient-to-b from-slate-900/95 to-transparent p-3">
     <div class="flex items-center justify-between max-w-lg mx-auto">
-     <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold">YOU</div><span id="user-score" class="text-3xl font-black">0</span></div>
+     <div class="flex items-center gap-3">
+       <!-- User avatar placeholder – will be filled via JS -->
+       <img id="user-avatar" class="user-avatar" src="" alt="User" style="display:none;">
+       <div id="user-avatar-placeholder" class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold">YOU</div>
+       <span id="user-score" class="text-3xl font-black">0</span>
+     </div>
      <div class="text-center"><div id="game-timer" class="text-2xl font-bold text-cyan-400">3:00</div><div class="text-xs text-gray-400">TIME</div></div>
      <div class="flex items-center gap-3"><span id="ai-score" class="text-3xl font-black">0</span><div id="ai-team-badge" class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center font-bold text-xs">G2T</div></div>
     </div>
     <div class="flex items-center justify-between max-w-lg mx-auto mt-2 text-xs">
-     <div class="flex items-center gap-1"><svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)" /><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg><span id="game-coins" class="font-bold text-cyan-400">0.0000</span></div>
+     <div class="flex items-center gap-1"><svg class="ton-logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg><span id="game-coins" class="font-bold text-cyan-400">0.0000</span></div>
      <div class="flex items-center gap-2"><span class="text-yellow-400">⚡</span><div class="w-20 bg-gray-700 rounded-full h-2"><div id="energy-bar" class="energy-bar" style="width: 100%"></div></div><span id="energy-text" class="text-yellow-400 font-bold">100</span></div>
     </div>
    </div>
@@ -602,10 +610,10 @@
    </div>
   </div>
 
-  <!-- ==================== EXIT AD SCREEN (AdsGram Interstitial) ==================== -->
+  <!-- ==================== EXIT AD SCREEN (AdsGram Interstitial or Monetag in-app) ==================== -->
   <div id="exit-ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
-    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Advertisement</h2><p class="text-gray-400 mb-6" id="exit-ad-message">Watching ad to exit, please wait...</p>
+    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Goal2Ton Ads</h2><p class="text-gray-400 mb-6" id="exit-ad-message">Watching ad to exit, please wait...</p>
     <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden"><div id="exit-ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width:0%; transition:width 1s linear;"></div></div>
     <div class="text-4xl font-bold text-cyan-400 mb-2"><span id="exit-ad-timer">30</span>s</div>
     <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30">
@@ -726,10 +734,10 @@
    </div>
   </div>
 
-  <!-- ==================== AD SCREEN (AdsGram Rewarded) ==================== -->
+  <!-- ==================== AD SCREEN (AdsGram Rewarded or Monetag in-app) ==================== -->
   <div id="ad-screen" class="celebration-overlay">
    <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4">
-    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Advertisement</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
+    <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Goal2Ton Ads</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
     <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden"><div id="ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width:0%; transition:width 1s linear;"></div></div>
     <div class="text-4xl font-bold text-cyan-400 mb-2"><span id="ad-timer">30</span>s</div>
     <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30"><div class="flex items-center justify-center gap-2 mb-1"><span class="text-sm text-gray-300">🎁 Earn</span><svg class="ton-logo" viewbox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="url(#tonGrad)"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="32" font-weight="900">T</text></svg><span class="text-cyan-400 font-bold">200 GP + 20⚡</span></div></div>
@@ -941,7 +949,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const BJS_WEBHOOK = urlParams.get('webhook');
     const REFERRER_PARAM = urlParams.get('start');
-    const JOINED_PARAM = urlParams.get('joined');
+    // joined param ignored – we don't use forced channel join
 
     let currentUserId = getCurrentUserId();
     if (!currentUserId) {
@@ -956,6 +964,7 @@
         id: currentUserId,
         username: tg?.initDataUnsafe?.user?.username || 'Player',
         first_name: tg?.initDataUnsafe?.user?.first_name || 'Player',
+        photo_url: tg?.initDataUnsafe?.user?.photo_url || '',
         wallet_address: '',
         total_coins: 0,
         goal_points: 0,
@@ -971,17 +980,12 @@
         referred_by: '',
         referral_count: 0,
         referral_earnings: 0,
-        joined_channel: false,
+        joined_channel: false, // kept for compatibility but not used
         daily_withdraw_count: 0,
         last_withdraw_date: '',
         created_at: new Date().toISOString(),
         last_played: new Date().toISOString()
       };
-      updateUser(playerData);
-    }
-
-    if (JOINED_PARAM === '1') {
-      playerData.joined_channel = true;
       updateUser(playerData);
     }
 
@@ -1008,25 +1012,8 @@
       return null;
     }
 
-    // -------------------- Force join channel --------------------
-    let joinedChannel = playerData.joined_channel || false;
-    if (!joinedChannel) document.getElementById('join-channel-banner').classList.remove('hidden');
-    else document.getElementById('join-channel-banner').classList.add('hidden');
-
-    async function verifyChannelJoin() {
-      showInlineMessage('Verifying...', 'info');
-      const response = await sendToBot('verify_channel', {});
-      if (response && response.joined === true) {
-        joinedChannel = true;
-        playerData.joined_channel = true;
-        updateUser(playerData);
-        document.getElementById('join-channel-banner').classList.add('hidden');
-        showInlineMessage('✅ Channel joined verified! You can now play.', 'success');
-        updateStatsDisplay();
-      } else {
-        showInlineMessage('❌ Not a member yet. Please join the channel first.', 'error');
-      }
-    }
+    // -------------------- No forced channel join --------------------
+    let joinedChannel = true; // always true, game is free to play
 
     // -------------------- Constants --------------------
     const TON_USD_RATE = 5.20;
@@ -1076,11 +1063,15 @@
     let gameTimerInterval, lastTime = 0, animationFrameId = null;
     let adCanceled = false;
     let exitAdCanceled = false;
-    let adTypeIndex = 0; // kept for Monetag preload but not used for showing
+    // adTypeIndex kept for Monetag preload only
+    let adTypeIndex = 0;
 
     // AdsGram controllers
     let rewardedAdController = null;
     let interstitialAdController = null;
+
+    // Current user team color (changes per goal)
+    let userTeamHue = Math.floor(Math.random() * 360);
 
     function getGpForGoal(goalNumber) {
       if (goalNumber <= 20) return 100;
@@ -1089,6 +1080,7 @@
     }
 
     function preloadAd() {
+      // Monetag preload (in-app ad)
       if (typeof show_10656450 === 'function') {
         show_10656450({ type: 'preload', ymid: playerData.id }).catch(() => {});
       }
@@ -1114,11 +1106,10 @@
           ])
         });
       }
-      // Initialize AdsGram controllers
+      // Initialize AdsGram controllers – replace with your actual block IDs
       if (window.Adsgram) {
-        // Replace with your actual block IDs from AdsGram partner panel
-        rewardedAdController = window.Adsgram.init({ blockId: "24484" }); // e.g. "123456"
-        interstitialAdController = window.Adsgram.init({ blockId: "int-24486" }); // must start with "int-"
+        rewardedAdController = window.Adsgram.init({ blockId: "24484" }); // rewarded
+        interstitialAdController = window.Adsgram.init({ blockId: "int-24486" }); // interstitial
       }
       preloadAd();
     }
@@ -1184,11 +1175,11 @@
         document.getElementById('btn-super-player').disabled = true;
       }
 
-      const canPlay = energy >= ENERGY_COST_PER_MATCH && joinedChannel;
+      // Play button: only energy check (no channel join required)
+      const canPlay = energy >= ENERGY_COST_PER_MATCH;
       const playBtn = document.getElementById('play-btn');
       if (!canPlay) {
-        if (!joinedChannel) playBtn.textContent = '🔒 Join Channel to Play';
-        else playBtn.textContent = '⚡ Low Energy - Watch Ad';
+        playBtn.textContent = '⚡ Low Energy - Watch Ad';
         playBtn.classList.add('opacity-75');
       } else {
         playBtn.textContent = '⚽ Play Match';
@@ -1331,7 +1322,7 @@
       }, 1000);
     }
 
-    // Show exit ad – randomly choose AdsGram or Monetag
+    // Show exit ad – randomly pick AdsGram interstitial or Monetag in-app
     function showExitAd() {
       document.getElementById('exit-confirm-overlay').classList.remove('active');
       document.getElementById('exit-ad-screen').classList.add('active');
@@ -1348,7 +1339,6 @@
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
 
-      // Randomly pick AdsGram (50%) or Monetag (50%)
       const useAdsGram = Math.random() < 0.5;
 
       if (useAdsGram && interstitialAdController) {
@@ -1375,22 +1365,30 @@
             }
           });
       } else {
-        // Use Monetag
-        const usePop = (adTypeIndex % 2 === 0);
-        adTypeIndex++;
-        if (usePop && typeof show_10656450 === 'function') {
-          show_10656450('pop').then(() => {
-            if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
-          }).catch(e => {
-            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); document.getElementById('exit-confirm-overlay').classList.add('active'); }
-          });
-        } else if (typeof show_10656450 === 'function') {
+        // Use Monetag in-app ad (no pop)
+        if (typeof show_10656450 === 'function') {
           show_10656450().then(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed < 5) {
+              if (!exitAdCanceled) {
+                clearInterval(adInterval);
+                document.getElementById('exit-ad-screen').classList.remove('active');
+                showInlineMessage('Ad failed to play. Please try again.', 'warning');
+                document.getElementById('exit-confirm-overlay').classList.add('active');
+              }
+              return;
+            }
             if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); }
           }).catch(e => {
-            if (!exitAdCanceled) { clearInterval(adInterval); document.getElementById('exit-ad-screen').classList.remove('active'); showInlineMessage('Ad not completed. Try again.', 'warning'); document.getElementById('exit-confirm-overlay').classList.add('active'); }
+            if (!exitAdCanceled) {
+              clearInterval(adInterval);
+              document.getElementById('exit-ad-screen').classList.remove('active');
+              showInlineMessage('Ad not completed. Try again.', 'warning');
+              document.getElementById('exit-confirm-overlay').classList.add('active');
+            }
           });
         } else {
+          // Fallback if Monetag not loaded – just complete after timer
           setTimeout(() => { if (!exitAdCanceled) { clearInterval(adInterval); completeExitAd(); } }, AD_DURATION * 1000);
         }
       }
@@ -1411,11 +1409,6 @@
 
     async function checkAndStartGame() {
       if (!playerData) { showInlineMessage('Loading player data...', 'info'); return; }
-      if (!joinedChannel) {
-        showInlineMessage('Please join our Telegram channel first!', 'warning');
-        document.getElementById('join-channel-banner').classList.remove('hidden');
-        return;
-      }
       if (gameState.energy < ENERGY_COST_PER_MATCH) {
         showInlineMessage('Not enough energy! Watch an ad or upgrade energy.', 'warning');
         return;
@@ -1439,12 +1432,9 @@
           energy: gameState.energy - ENERGY_COST_PER_MATCH,
           maxEnergy: gameState.maxEnergy
         };
-        const userHue = Math.floor(Math.random() * 360);
-        setTimeout(() => {
-          document.querySelectorAll('.player.user').forEach(el => {
-            el.style.background = `linear-gradient(135deg, hsl(${userHue}, 100%, 50%), hsl(${userHue}, 100%, 30%))`;
-          });
-        }, 100);
+        // Random team color for this match
+        userTeamHue = Math.floor(Math.random() * 360);
+        applyUserTeamColor();
         showScreen('game-screen');
         initializePlayers();
         resetBall();
@@ -1463,6 +1453,12 @@
         console.error('Error starting game:', error);
         showInlineMessage('Error starting game. Please refresh.', 'error');
       }
+    }
+
+    function applyUserTeamColor() {
+      document.querySelectorAll('.player.user').forEach(el => {
+        el.style.background = `linear-gradient(135deg, hsl(${userTeamHue}, 100%, 50%), hsl(${userTeamHue}, 100%, 30%))`;
+      });
     }
 
     function initializePlayers() {
@@ -1504,7 +1500,20 @@
         field.appendChild(player);
         return { el:player, x:pos.x, y:pos.y, homeX:pos.x, homeY:pos.y, vx:0, vy:0 };
       });
+      applyUserTeamColor();
       selectNearestPlayer();
+
+      // Set user avatar if available
+      const avatarImg = document.getElementById('user-avatar');
+      const avatarPlaceholder = document.getElementById('user-avatar-placeholder');
+      if (playerData.photo_url) {
+        avatarImg.src = playerData.photo_url;
+        avatarImg.style.display = 'inline-block';
+        avatarPlaceholder.style.display = 'none';
+      } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'flex';
+      }
     }
 
     function selectPlayer(index, team) { if (team !== 'user') return; userPlayers.forEach((p,i) => p.el.classList.toggle('selected', i===index)); gameState.selectedPlayer = index; }
@@ -1537,9 +1546,35 @@
         ball.x += (player.x - ball.x) * 0.3;
         ball.y += (player.y + offsetY - ball.y) * 0.3;
       } else if (gameState.ballPossession === 'ai') {
-        const aiAttacker = aiPlayers[9];
-        ball.x += (aiAttacker.x - ball.x) * 0.2;
-        ball.y += (aiAttacker.y + 5 - ball.y) * 0.2;
+        // Improved AI: pass the ball among themselves
+        const aiAttacker = aiPlayers[9]; // striker
+        // Look for a teammate to pass to
+        let passTarget = null;
+        let passScore = -Infinity;
+        aiPlayers.forEach((p, i) => {
+          if (i === 9) return; // don't pass to self
+          const dx = p.x - aiAttacker.x;
+          const dy = p.y - aiAttacker.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 30 && dist > 5) {
+            // Prefer players closer to goal
+            const goalProximity = 100 - p.y; // lower y is better for AI (top)
+            const score = goalProximity - dist * 0.5;
+            if (score > passScore) {
+              passScore = score;
+              passTarget = p;
+            }
+          }
+        });
+        if (passTarget && Math.random() < 0.02) { // 2% chance per frame to pass
+          gameState.ballPossession = 'none';
+          ball.vx = (passTarget.x - ball.x) * 0.15;
+          ball.vy = (passTarget.y - ball.y) * 0.15;
+        } else {
+          // dribble toward goal
+          ball.x += (aiAttacker.x - ball.x) * 0.2;
+          ball.y += (aiAttacker.y + 5 - ball.y) * 0.2;
+        }
       } else {
         ball.x += ball.vx; ball.y += ball.vy; ball.vx *= 0.96; ball.vy *= 0.96;
         if (Math.abs(ball.vx) < 0.05 && Math.abs(ball.vy) < 0.05) {
@@ -1656,7 +1691,10 @@
         if (team === 'user') {
           gameState.userScore++;
           gameState.goalsThisMatch++;
-          // Calculate GP based on total goals (career + this match so far)
+          // Change team color on goal
+          userTeamHue = (userTeamHue + 30) % 360;
+          applyUserTeamColor();
+
           let totalGoalsBefore = playerData.goals_scored + gameState.goalsThisMatch - 1; // before this goal
           let gpEarned = getGpForGoal(totalGoalsBefore + 1);
           playerData.goal_points = (playerData.goal_points || 0) + gpEarned;
@@ -1812,7 +1850,7 @@
 
     async function saveStats(result) { /* no longer used directly */ }
 
-    // Show rewarded ad – randomly choose AdsGram or Monetag
+    // Show rewarded ad – randomly pick AdsGram rewarded or Monetag in-app
     function showAdReward() {
       document.getElementById('gameover-overlay').classList.remove('active');
       document.getElementById('ad-screen').classList.add('active');
@@ -1829,7 +1867,6 @@
         if (timeLeft <= 0) clearInterval(adInterval);
       }, 1000);
 
-      // Randomly pick AdsGram (50%) or Monetag (50%)
       const useAdsGram = Math.random() < 0.5;
 
       if (useAdsGram && rewardedAdController) {
@@ -1856,35 +1893,31 @@
             }
           });
       } else {
-        // Use Monetag
-        const usePop = (adTypeIndex % 2 === 0);
-        adTypeIndex++;
-        const adPromise = usePop && typeof show_10656450 === 'function'
-          ? show_10656450('pop')
-          : typeof show_10656450 === 'function'
-          ? show_10656450()
-          : new Promise(resolve => setTimeout(resolve, AD_DURATION * 1000));
-
-        adPromise.then(() => {
-          const elapsed = (Date.now() - startTime) / 1000;
-          if (elapsed < 5) {
+        // Use Monetag in-app ad
+        if (typeof show_10656450 === 'function') {
+          show_10656450().then(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed < 5) {
+              if (!adCanceled) {
+                clearInterval(adInterval);
+                document.getElementById('ad-screen').classList.remove('active');
+                showInlineMessage('Ad failed to play. Please try again.', 'warning');
+                showScreen('menu-screen');
+              }
+              return;
+            }
+            if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
+          }).catch(e => {
             if (!adCanceled) {
               clearInterval(adInterval);
               document.getElementById('ad-screen').classList.remove('active');
-              showInlineMessage('Ad failed to play. Please try again.', 'warning');
+              showInlineMessage('Ad not completed. Try again.', 'warning');
               showScreen('menu-screen');
             }
-            return;
-          }
-          if (!adCanceled) { clearInterval(adInterval); completeAdReward(); }
-        }).catch(e => {
-          if (!adCanceled) {
-            clearInterval(adInterval);
-            document.getElementById('ad-screen').classList.remove('active');
-            showInlineMessage('Ad not completed. Try again.', 'warning');
-            showScreen('menu-screen');
-          }
-        });
+          });
+        } else {
+          setTimeout(() => { if (!adCanceled) { clearInterval(adInterval); completeAdReward(); } }, AD_DURATION * 1000);
+        }
       }
     }
 
@@ -2189,28 +2222,14 @@
       });
     }
 
-    // -------------------- Listen for bot messages (joined status, refCode) --------------------
+    // -------------------- Listen for bot messages (only referral code now) --------------------
     if (tg) {
       tg.onEvent('message', (data) => {
-        // data is the message text sent by the bot (should be JSON)
         try {
           const msg = JSON.parse(data);
-          if (msg.joined !== undefined) {
-            const joined = msg.joined === '1' || msg.joined === true;
-            joinedChannel = joined;
-            playerData.joined_channel = joined;
-            updateUser(playerData);
-            if (joined) {
-              document.getElementById('join-channel-banner').classList.add('hidden');
-            } else {
-              document.getElementById('join-channel-banner').classList.remove('hidden');
-            }
-            updateStatsDisplay(); // updates play button state
-          }
           if (msg.refCode) {
-            // Optionally store the referral code (e.g., as incomingReferrerId)
             incomingReferrerId = msg.refCode;
-            // You could also update UI if needed, but referral screen already shows code entry
+            // Optionally update UI to show that a referral code is waiting
           }
         } catch (e) {
           console.warn('Failed to parse bot message:', e);
