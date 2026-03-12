@@ -604,18 +604,20 @@
 
 <!-- ==================== MENU SCREEN ==================== -->
 <div id="menu-screen" class="screen active flex-col items-center justify-center min-h-full p-6">
-  <div class="text-center mb-6">
-    <!-- TON SVG icon (Ton_20260311_053820_0000.svg) -->
-    <svg class="w-24 h-24 mx-auto mb-4" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="48" fill="url(#tonGradNew)" stroke="#00FFAA" stroke-width="3"/>
-      <text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900" font-family="Orbitron">T</text>
+  <div class="text-center mb-4">
+    <!-- New authentic TON logo (big) -->
+    <svg class="w-24 h-24 mx-auto mb-4" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="tonGradNew" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#4CAF50"/>
-          <stop offset="50%" stop-color="#8BC34A"/>
-          <stop offset="100%" stop-color="#4CAF50"/>
+        <linearGradient id="hexGradientMenu" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6ED0E0"/>
+          <stop offset="50%" stop-color="#2EA7E0"/>
+          <stop offset="100%" stop-color="#0B6BD3"/>
         </linearGradient>
       </defs>
+      <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientMenu)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+      <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+      <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+      <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
     </svg>
     <h1 id="main-title" class="game-title text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-white to-green-400 mb-2">TON FOOTBALL</h1>
     <p id="welcome-msg" class="text-green-300 text-sm">Play &amp; Earn Real TON Crypto</p>
@@ -626,11 +628,19 @@
     <div class="grid grid-cols-2 gap-3 mb-3">
       <div class="text-center">
         <div class="flex items-center justify-center gap-1 mb-1">
-          <!-- Ton logo small -->
-          <svg class="ton-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="48" fill="url(#tonGradSmall)" stroke="#00FFAA" stroke-width="2"/>
-            <text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900" font-family="Orbitron">T</text>
-            <defs><linearGradient id="tonGradSmall" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs>
+          <!-- New authentic TON logo (small) -->
+          <svg class="ton-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hexGradientSmall" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6ED0E0"/>
+                <stop offset="50%" stop-color="#2EA7E0"/>
+                <stop offset="100%" stop-color="#0B6BD3"/>
+              </linearGradient>
+            </defs>
+            <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientSmall)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+            <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+            <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+            <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
           </svg>
           <span id="menu-coins" class="text-2xl font-bold text-green-400">0.0000</span>
         </div><span class="text-gray-400 text-xs">TON Balance</span>
@@ -684,11 +694,19 @@
     </div>
     <div class="flex items-center justify-between max-w-lg mx-auto mt-2 text-xs">
       <div class="flex items-center gap-1">
-        <!-- Ton logo small -->
-        <svg class="ton-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="48" fill="url(#tonGradGame)" stroke="#00FFAA" stroke-width="2"/>
-          <text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900" font-family="Orbitron">T</text>
-          <defs><linearGradient id="tonGradGame" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs>
+        <!-- New authentic TON logo (small) -->
+        <svg class="ton-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hexGradientGame" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6ED0E0"/>
+              <stop offset="50%" stop-color="#2EA7E0"/>
+              <stop offset="100%" stop-color="#0B6BD3"/>
+            </linearGradient>
+          </defs>
+          <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientGame)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+          <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+          <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+          <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
         </svg>
         <span id="game-coins" class="font-bold text-green-400">0.0000</span>
       </div>
@@ -747,8 +765,20 @@
     </svg>
     <h3 class="text-2xl font-bold mb-2">Earn TON by Inviting!</h3><p class="text-gray-400 text-sm mb-4">Get 0.0010 TON + 25 Energy for each friend who joins</p>
     <div class="grid grid-cols-2 gap-4"><div><div class="flex items-center justify-center gap-1 mb-1">
-      <!-- Ton logo small -->
-      <svg class="ton-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradRef)"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradRef"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+      <!-- New authentic TON logo (small) -->
+      <svg class="ton-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexGradientRef" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6ED0E0"/>
+            <stop offset="50%" stop-color="#2EA7E0"/>
+            <stop offset="100%" stop-color="#0B6BD3"/>
+          </linearGradient>
+        </defs>
+        <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientRef)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+        <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+        <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+        <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      </svg>
       <span id="referral-earnings" class="text-2xl font-bold text-green-400">0.0000</span>
     </div><div class="text-xs text-gray-400">Total Earned</div></div><div><div class="text-3xl font-bold text-pink-400" id="referral-count">0</div><div class="text-xs text-gray-400">Friends Joined</div></div></div>
   </div>
@@ -763,8 +793,20 @@
   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><h2 class="game-title text-2xl font-bold">🏆 Leaderboard</h2></div>
   <div class="stat-card rounded-xl p-4 mb-4 border-green-500">
     <div class="flex items-center justify-between"><div><div class="text-sm text-gray-400 mb-1">Your Rank</div><div id="user-rank" class="text-3xl font-black text-green-400">#-</div></div><div class="text-right"><div class="text-sm text-gray-400 mb-1">Your Score</div><div class="flex items-center gap-1 justify-end">
-      <!-- Ton logo -->
-      <svg class="ton-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradLead)"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradLead"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+      <!-- New authentic TON logo (small) -->
+      <svg class="ton-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexGradientLead" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6ED0E0"/>
+            <stop offset="50%" stop-color="#2EA7E0"/>
+            <stop offset="100%" stop-color="#0B6BD3"/>
+          </linearGradient>
+        </defs>
+        <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientLead)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+        <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+        <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+        <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      </svg>
       <span id="user-leaderboard-coins" class="text-2xl font-bold text-green-400">0.0000</span>
     </div></div></div>
   </div>
@@ -776,8 +818,20 @@
   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><h2 class="game-title text-2xl font-bold">⚡ Upgrades</h2></div>
   <div class="stat-card rounded-xl p-4 mb-4 text-center border-green-500">
     <div class="flex items-center justify-center gap-2 mb-2">
-      <!-- Ton logo big -->
-      <svg class="ton-logo-big" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradUp)" stroke="#00FFAA" stroke-width="3"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradUp"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+      <!-- New authentic TON logo (big) -->
+      <svg class="ton-logo-big" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexGradientUp" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6ED0E0"/>
+            <stop offset="50%" stop-color="#2EA7E0"/>
+            <stop offset="100%" stop-color="#0B6BD3"/>
+          </linearGradient>
+        </defs>
+        <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientUp)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+        <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+        <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+        <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      </svg>
       <span id="upgrade-balance" class="text-4xl font-black text-green-400">0.0000</span>
     </div>
     <div class="text-sm text-gray-400">Available TON</div>
@@ -794,8 +848,20 @@
 <div id="wallet-screen" class="screen flex-col min-h-full p-6 scroll-container">
   <div class="flex items-center gap-4 mb-6"><button onclick="showScreen('menu-screen')" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><h2 class="game-title text-2xl font-bold">💰 TON Wallet</h2></div>
   <div class="stat-card rounded-xl p-6 mb-6 text-center border-green-500">
-    <!-- Ton logo big -->
-    <svg class="ton-logo-big mx-auto mb-3" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradWallet)" stroke="#00FFAA" stroke-width="3"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradWallet"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+    <!-- New authentic TON logo (big) -->
+    <svg class="ton-logo-big mx-auto mb-3" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hexGradientWallet" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6ED0E0"/>
+          <stop offset="50%" stop-color="#2EA7E0"/>
+          <stop offset="100%" stop-color="#0B6BD3"/>
+        </linearGradient>
+      </defs>
+      <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientWallet)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+      <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+      <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+      <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+    </svg>
     <div id="wallet-balance" class="text-4xl font-black text-green-400 mb-2">0.0000</div><div class="text-sm text-gray-400 mb-1">TON Balance</div><div class="text-xs text-gray-500">≈ $<span id="wallet-usd">0.00</span> USD</div>
     <div class="flex items-center justify-center gap-2 mt-4"><span class="text-xl">⚽</span><span id="wallet-gp" class="text-2xl font-bold text-green-400">0</span><span class="text-sm text-gray-400">Goal Points</span></div>
     <button onclick="showConvertModal()" class="mt-4 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg font-bold text-sm"> Convert GP to TON </button>
@@ -856,8 +922,20 @@
       <span class="text-green-400">+<span id="goal-reward">100</span></span>
       <span class="text-sm">GP</span>
       <span id="goal-tier-badge" class="ml-2 text-sm font-bold px-2 py-1 rounded-full"></span>
-      <!-- Ton logo small -->
-      <svg class="ton-logo-big" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradGoal)"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradGoal"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+      <!-- New authentic TON logo (small) -->
+      <svg class="ton-logo-big" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexGradientGoal" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6ED0E0"/>
+            <stop offset="50%" stop-color="#2EA7E0"/>
+            <stop offset="100%" stop-color="#0B6BD3"/>
+          </linearGradient>
+        </defs>
+        <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientGoal)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+        <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+        <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+        <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      </svg>
     </div>
   </div>
 </div>
@@ -884,7 +962,22 @@
     <div class="text-6xl mb-4">📺</div><h2 class="game-title text-2xl font-bold mb-4">Goal2Ton Ads</h2><p class="text-gray-400 mb-6" id="ad-message">Watching ad, please wait...</p>
     <div class="bg-white/10 rounded-full h-8 mb-4 overflow-hidden"><div id="ad-progress" class="ad-timer-bar h-full bg-gradient-to-r from-purple-500 to-violet-600" style="width:0%; transition:width 1s linear;"></div></div>
     <div class="text-4xl font-bold text-green-400 mb-2"><span id="ad-timer">30</span>s</div>
-    <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30"><div class="flex items-center justify-center gap-2 mb-1"><span class="text-sm text-gray-300">🎁 Earn</span><svg class="ton-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradAd)"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradAd"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg><span class="text-green-400 font-bold">200 GP + 20⚡</span></div></div>
+    <div class="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-violet-600/20 rounded-lg border border-purple-500/30"><div class="flex items-center justify-center gap-2 mb-1"><span class="text-sm text-gray-300">🎁 Earn</span>
+      <!-- New authentic TON logo (small) -->
+      <svg class="ton-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexGradientAd" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6ED0E0"/>
+            <stop offset="50%" stop-color="#2EA7E0"/>
+            <stop offset="100%" stop-color="#0B6BD3"/>
+          </linearGradient>
+        </defs>
+        <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientAd)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+        <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+        <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+        <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      </svg>
+      <span class="text-green-400 font-bold">200 GP + 20⚡</span></div></div>
     <div class="mt-4"><button onclick="cancelAd()" class="px-4 py-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg text-red-400 text-sm transition-all">Cancel</button></div>
   </div>
 </div>
@@ -894,8 +987,20 @@
   <div class="celebration-content stat-card rounded-2xl p-8 max-w-sm mx-4" style="transform:scale(1);">
     <div class="text-6xl mb-4">💰</div><h2 class="game-title text-2xl font-bold mb-4">Withdraw TON</h2>
     <div class="bg-white/10 rounded-xl p-4 mb-6"><div class="text-sm text-gray-400 mb-2">Available Balance</div><div class="flex items-center justify-center gap-2">
-      <!-- Ton logo big -->
-      <svg class="ton-logo-big" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradWith)"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradWith"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+      <!-- New authentic TON logo (big) -->
+      <svg class="ton-logo-big" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexGradientWith" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6ED0E0"/>
+            <stop offset="50%" stop-color="#2EA7E0"/>
+            <stop offset="100%" stop-color="#0B6BD3"/>
+          </linearGradient>
+        </defs>
+        <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientWith)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+        <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+        <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+        <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      </svg>
       <span id="withdraw-balance" class="text-4xl font-black text-green-400">0.0000</span>
     </div></div>
     <div class="mb-6"><label for="withdraw-amount" class="block text-sm text-gray-400 mb-2">Amount (TON)</label><div class="flex gap-2"><input type="number" id="withdraw-amount" step="0.0001" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white text-center text-xl font-bold" placeholder="0.0000" min="0.0100"> <button onclick="setMaxWithdraw()" class="px-4 py-3 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg text-cyan-400 font-bold transition-all"> MAX </button></div><p class="text-xs text-gray-500 mt-2">Min: 0.0100 TON | Fee: <span id="withdraw-fee-display">0.0001</span> TON (increases per withdrawal)</p></div>
@@ -1179,7 +1284,7 @@
   const FEE_SUBSEQUENT = 0.0020;
 
   const defaultConfig = {
-    game_title: 'TON FOOTBALL',
+    game_title: 'GOAL2TON FOOTBALL',
     welcome_message: 'Play & Earn Real TON Crypto'
   };
   let config = { ...defaultConfig };
@@ -1430,7 +1535,20 @@
         </div>
         <div class="text-right">
           <div class="flex items-center gap-1 justify-end">
-            <svg class="ton-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="url(#tonGradLB)"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="48" font-weight="900">T</text><defs><linearGradient id="tonGradLB"><stop offset="0%" stop-color="#4CAF50"/><stop offset="50%" stop-color="#8BC34A"/><stop offset="100%" stop-color="#4CAF50"/></linearGradient></defs></svg>
+            <!-- New authentic TON logo (small) -->
+            <svg class="ton-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="hexGradientLB" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6ED0E0"/>
+                  <stop offset="50%" stop-color="#2EA7E0"/>
+                  <stop offset="100%" stop-color="#0B6BD3"/>
+                </linearGradient>
+              </defs>
+              <polygon points="256,60 420,160 420,352 256,452 92,352 92,160" fill="url(#hexGradientLB)" stroke="#1B82D1" stroke-width="12" rx="30"/>
+              <polygon points="256,100 385,180 385,332 256,412 127,332 127,180" fill="none" stroke="#7FD7F0" stroke-width="8" opacity="0.6"/>
+              <path d="M190 200 L256 330 L322 200 Z" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+              <line x1="256" y1="200" x2="256" y2="330" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+            </svg>
             <span class="font-bold text-green-400">${(player.total_coins||0).toFixed(4)}</span>
           </div>
           <div class="text-xs text-gray-400">⚽ ${player.goals_scored||0} GP</div>
